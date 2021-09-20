@@ -73,13 +73,8 @@ public class ConfigManager{
         return ReportBugMention;
     }
 
-    public static void setReportURL(URL reportURL) {
-        ReportURL = reportURL;
-    }
-
     public static void setReportMention(String st){
         ReportMention = st;
-        
     }
     public static void setReportBugMention(String st){
         ReportBugMention = st;
