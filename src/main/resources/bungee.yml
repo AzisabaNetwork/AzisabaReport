@@ -1,0 +1,4 @@
+name: AzisabaReport
+version: '${version}'
+main: azisaba.net.azisabareport.AzisabaReport
+description: AzisabaReportPlugin for BungeeCord

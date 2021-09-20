@@ -1,0 +1,13 @@
+#  ------------------------------------------------------------
+#  |                    AzisabaReport plugin                  |
+#  |                                                          |
+#  |                       Depend :                           |
+#  | GitHub : https://github.com/AzisabaNetwork/AzisabaReport |
+#  |                   ran by bungeecord 1.16                 |
+#  ------------------------------------------------------------
+
+ReportURL:
+ReportBugURL:
+
+ReportMention:
+ReportBugMention:
