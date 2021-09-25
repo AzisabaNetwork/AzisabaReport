@@ -12,7 +12,6 @@ import java.net.URL;
 import java.nio.file.Files;
 
 public class ConfigManager {
-    private static AzisabaReport plugin;
     private static Configuration config;
     private static URL ReportURL = null;
     private static URL ReportBugURL = null;
@@ -21,7 +20,7 @@ public class ConfigManager {
 
 
     public static void loadConfig() {
-        plugin = AzisabaReport.getInstance();
+        AzisabaReport plugin = AzisabaReport.getInstance();
         if (!plugin.getDataFolder().exists()) {
             plugin.getDataFolder().mkdir();
         }
@@ -31,14 +30,14 @@ public class ConfigManager {
             try {
                 InputStream in = plugin.getResourceAsStream("config.yml");
                 Files.copy(in, file.toPath());
-            } catch ( IOException e ) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
 
         try {
             config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(new File(plugin.getDataFolder(), "config.yml"));
-        } catch ( IOException e ) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
 

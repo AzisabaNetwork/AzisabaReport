@@ -1,25 +1,28 @@
 package azisaba.net.azisabareport;
 
-import java.util.List;
-import java.util.Collections;
-import java.util.ArrayList;
-import java.io.OutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import javax.net.ssl.HttpsURLConnection;
-import java.net.URL;
-
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.CommandSender;
-import net.md_5.bungee.api.plugin.TabExecutor;
 import net.md_5.bungee.api.plugin.Command;
+import net.md_5.bungee.api.plugin.TabExecutor;
+
+import javax.net.ssl.HttpsURLConnection;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class ReportCommand extends Command implements TabExecutor {
-    public ReportCommand(final String name) {
-        super(name);
+    public ReportCommand() {
+        super("report");
     }
 
     public void execute(final CommandSender sender, final String[] args) {
@@ -28,60 +31,79 @@ public class ReportCommand extends Command implements TabExecutor {
             return;
         }
         if (!(sender instanceof ProxiedPlayer)) {
-            //senderがプレイヤーじゃなかったら
-            sender.sendMessage(net.md_5.bungee.api.chat.TextComponent.fromLegacyText(ChatColor.RED + "プレイヤー以外は実行できません。"));
+            // senderがプレイヤーじゃなかったら
+            sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "プレイヤー以外は実行できません。"));
             return;
         }
         if (args.length <= 1) {
-            sender.sendMessage(net.md_5.bungee.api.chat.TextComponent.fromLegacyText(ChatColor.RED + "/report mcid <内容>" + " と記入してください。"));
+            sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "/report mcid <理由> と記入してください。"));
             return;
         }
         if (ProxyServer.getInstance().getPlayer(args[0]) == null) {
             sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "入力されたプレイヤーが存在しません。"));
             return;
         }
+        sender.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "送信されました。"));
+        JsonObject o = new JsonObject();
+        o.add("username", new JsonPrimitive(sender.getName()));
+        o.add("avatar_url", new JsonPrimitive("https://crafatar.com/avatars/" + ((ProxiedPlayer) sender).getUniqueId()));
+        o.add("content", new JsonPrimitive(ConfigManager.getReportMention()));
+        JsonArray embeds = new JsonArray();
+        JsonObject embed = new JsonObject();
+        embed.add("title", new JsonPrimitive("鯖名"));
+        embed.add("color", new JsonPrimitive(16711680));
+        embed.add("description", new JsonPrimitive(((ProxiedPlayer) sender).getServer().getInfo().getName()));
+        JsonObject author = new JsonObject();
+        author.add("name", new JsonPrimitive(sender.getName()));
+        embed.add("author", author);
+        JsonArray fields = new JsonArray();
+        JsonObject field1 = new JsonObject();
+        field1.add("name", new JsonPrimitive("対象者"));
+        field1.add("value", new JsonPrimitive(args[0]));
+        JsonObject field2 = new JsonObject();
+        field2.add("name", new JsonPrimitive("内容"));
+        field2.add("value", new JsonPrimitive(String.join(" ", args)));
+        JsonObject field3 = new JsonObject();
+        field3.add("name", new JsonPrimitive("UUID"));
+        field3.add("value", new JsonPrimitive(ProxyServer.getInstance().getPlayer(args[0]).getUniqueId().toString()));
+        fields.add(field1);
+        fields.add(field2);
+        fields.add(field3);
+        embed.add("fields", fields);
+        embeds.add(embed);
+        o.add("embeds", embeds);
+        requestWebHook(o.toString(), ConfigManager.getReportURL());
+    }
 
-
+    public static void requestWebHook(final String json, final URL url) {
         ProxyServer.getInstance().getScheduler().runAsync(AzisabaReport.getInstance(), () -> {
             try {
-                String temp_message = "{\n  \"username\": \"%reporter%\",\n  \"avatar_url\": \"https://crafatar.com/avatars/%reporter_uuid%\",\n  \"content\": \"" + ConfigManager.getReportMention() + "\",\n  \"embeds\": [\n    {\n      \"title\": \"\u9bd6\u540d\",\n      \"color\": 16711680,\n      \"description\": \"%servername%\",\n      \"timestamp\": \"\",\n      \"url\": \"\",\n      \"author\": {\n        \"name\": \"%reporter%\"\n      },\n      \"image\": {},\n      \"thumbnail\": {},\n      \"footer\": {},\n      \"fields\": [\n        {\n          \"name\": \"\u5bfe\u8c61\u8005\",\n          \"value\": \"%player%\",\n          \"inline\": false\n        },\n        {\n          \"name\": \"\u5185\u5bb9\",\n          \"value\": \"%content%\"\n        },\n        {\n          \"name\": \"UUID\",\n          \"value\": \"%reporter_uuid%\"\n        }\n      ]\n    }\n  ]\n}";
-                String message = temp_message.replace("%servername%", ((ProxiedPlayer) sender).getServer().getInfo().getName()).replace("%player%", args[0]).replace("%player%", args[0]).replace("%uuid%", String.valueOf(ProxyServer.getInstance().getPlayer(args[0]).getUniqueId())).replace("%reporter%", sender.getName()).replace("%reporter_uuid%", String.valueOf(((ProxiedPlayer) sender).getUniqueId())).replace("%content%", String.join(" ", (CharSequence[]) args).replace("\"", "\\\""));
-                requestWebHook(message, ConfigManager.getReportURL());
-                sender.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "送信されました。"));
-            } catch ( Exception e ) {
+                final HttpsURLConnection con = (HttpsURLConnection) url.openConnection();
+                con.addRequestProperty("Content-Type", "application/json; charset=utf-8");
+                con.addRequestProperty("User-Agent", "AzisabaReport/1.1");
+                con.setDoOutput(true);
+                con.setRequestMethod("POST");
+                con.setRequestProperty("Content-Length", String.valueOf(json.length()));
+                final OutputStream stream = con.getOutputStream();
+                stream.write(json.getBytes(StandardCharsets.UTF_8));
+                stream.flush();
+                stream.close();
+                con.disconnect();
+                con.getResponseCode();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         });
     }
 
-    private static void requestWebHook(final String json, final URL url) throws IOException {
-        final HttpsURLConnection con = (HttpsURLConnection) url.openConnection();
-        con.addRequestProperty("Content-Type", "application/JSON; charset=utf-8");
-        con.addRequestProperty("User-Agent", "DiscordWebHook");
-        con.setDoOutput(true);
-        con.setRequestMethod("POST");
-        con.setRequestProperty("Content-Length", String.valueOf(json.length()));
-        final OutputStream stream = con.getOutputStream();
-        stream.write(json.getBytes(StandardCharsets.UTF_8));
-        stream.flush();
-        stream.close();
-        final int status = con.getResponseCode();
-        if (status == 200 || status != 204) {
-        }
-        con.disconnect();
-    }
-
     public Iterable<String> onTabComplete(final CommandSender sender, final String[] args) {
-        if (!(sender instanceof ProxiedPlayer)) {
-            sender.sendMessage(net.md_5.bungee.api.chat.TextComponent.fromLegacyText(ChatColor.RED + "プレイヤー以外は実行できません。"));
-            return null;
-        }
+        if (!(sender instanceof ProxiedPlayer)) return null;
         String lastArg = "";
         if (args.length != 0) {
             lastArg = args[args.length - 1].toLowerCase();
         }
         if (args.length <= 1) {
-            final List<String> players = new ArrayList<String>();
+            final List<String> players = new ArrayList<>();
             for (final ProxiedPlayer player : ((ProxiedPlayer) sender).getServer().getInfo().getPlayers()) {
                 if (player.getName().toLowerCase().startsWith(lastArg)) {
                     players.add(player.getName());

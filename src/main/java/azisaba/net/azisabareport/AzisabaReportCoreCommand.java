@@ -3,19 +3,17 @@ package azisaba.net.azisabareport;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.TabExecutor;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
 public class AzisabaReportCoreCommand extends Command implements TabExecutor {
-
-    public AzisabaReportCoreCommand(String name) {
-        super(name);
+    public AzisabaReportCoreCommand() {
+        super("azisabareport");
     }
 
     @Override
@@ -68,20 +66,13 @@ public class AzisabaReportCoreCommand extends Command implements TabExecutor {
 
     @Override
     public Iterable<String> onTabComplete(final CommandSender sender, final String[] args) {
-        final List<String> commandList = new ArrayList<String>();
-        if (args.length <= 1) {
-            commandList.add("setReportMention");
-            commandList.add("setReportBugMention");
-            commandList.add("reload");
-            return commandList;
-        }
-
+        List<String> commands = Arrays.asList("setreportmention", "setreportbugmention", "reload");
+        if (args.length <= 1) return commands;
         if (args.length <= 2) {
             if (args[0].equalsIgnoreCase("setreportmention") || args[0].equalsIgnoreCase("setreportbugmention")) {
                 return Collections.singletonList("MentionsList");
             }
         }
-
-        return commandList;
+        return commands;
     }
 }
