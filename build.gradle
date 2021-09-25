@@ -1,7 +1,7 @@
 apply plugin: 'java'
 
 group = 'azisaba.net'
-version = '1.1.1'
+version = '1.1.2'
 tasks.withType(AbstractCompile)*.options*.encoding = tasks.withType(GroovyCompile)*.groovyOptions*.encoding = 'UTF-8'
 
 repositories {
