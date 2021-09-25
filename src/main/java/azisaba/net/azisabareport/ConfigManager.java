@@ -11,7 +11,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 
-public class ConfigManager{
+public class ConfigManager {
     private static AzisabaReport plugin;
     private static Configuration config;
     private static URL ReportURL = null;
@@ -20,36 +20,36 @@ public class ConfigManager{
     private static String ReportBugMention = "";
 
 
-    public static void loadConfig(){
+    public static void loadConfig() {
         plugin = AzisabaReport.getInstance();
-        if(!plugin.getDataFolder().exists()){
+        if (!plugin.getDataFolder().exists()) {
             plugin.getDataFolder().mkdir();
         }
 
-        File file = new File(plugin.getDataFolder(),"config.yml");
-        if(!file.exists()){
-            try{
+        File file = new File(plugin.getDataFolder(), "config.yml");
+        if (!file.exists()) {
+            try {
                 InputStream in = plugin.getResourceAsStream("config.yml");
                 Files.copy(in, file.toPath());
-            }catch (IOException e){
+            } catch ( IOException e ) {
                 e.printStackTrace();
             }
         }
 
-        try{
+        try {
             config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(new File(plugin.getDataFolder(), "config.yml"));
-        }catch(IOException e){
+        } catch ( IOException e ) {
             e.printStackTrace();
         }
 
         try {
             ReportURL = new URL(config.getString("ReportURL"));
-        } catch (MalformedURLException e) {
+        } catch ( MalformedURLException e ) {
             e.printStackTrace();
         }
         try {
             ReportBugURL = new URL(config.getString("ReportBugURL"));
-        } catch (MalformedURLException e) {
+        } catch ( MalformedURLException e ) {
             e.printStackTrace();
         }
 
@@ -65,7 +65,7 @@ public class ConfigManager{
         return ReportBugURL;
     }
 
-    public static String getReportMention(){
+    public static String getReportMention() {
         return ReportMention;
     }
 
@@ -73,10 +73,11 @@ public class ConfigManager{
         return ReportBugMention;
     }
 
-    public static void setReportMention(String st){
+    public static void setReportMention(String st) {
         ReportMention = st;
     }
-    public static void setReportBugMention(String st){
+
+    public static void setReportBugMention(String st) {
         ReportBugMention = st;
     }
 }
