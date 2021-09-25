@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import javax.net.ssl.HttpsURLConnection;
 import java.net.URL;
+
+import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -33,9 +35,11 @@ public class ReportBugCommand extends Command implements TabExecutor {
         }
         sender.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "\u9001\u4fe1\u3055\u308c\u307e\u3057\u305f\u3002"));
 
-        String temp_message = "{\n  \"username\": \"%reporter%\",\n  \"avatar_url\": \"https://crafatar.com/avatars/%reporter_uuid%\",\n  \"content\": \""+ConfigManager.getReportBugMention()+"\",\n  \"embeds\": [\n    {\n      \"title\": \"\u9bd6\u540d\",\n      \"color\": 16711680,\n      \"description\": \"%servername%\",\n      \"timestamp\": \"\",\n      \"url\": \"\",\n      \"author\": {\n        \"name\": \"%reporter%\"\n      },\n      \"image\": {},\n      \"thumbnail\": {},\n      \"footer\": {},\n      \"fields\": [\n        {\n          \"name\": \"\u5185\u5bb9\",\n          \"value\": \"%content%\",\n          \"inline\": false\n        },\n        {\n          \"name\": \"UUID\",\n          \"value\": \"%reporter_uuid%\"\n        }\n      ]\n    }\n  ]\n}";
-        String message = temp_message.replace("%servername%", ((ProxiedPlayer) sender).getServer().getInfo().getName()).replace("%reporter%", sender.getName()).replace("%reporter_uuid%", String.valueOf(((ProxiedPlayer) sender).getUniqueId())).replace("%content%", String.join(" ", (CharSequence[]) args).replace("\"", "\\\""));
-        requestWebHook(message, ConfigManager.getReportBugURL());
+        ProxyServer.getInstance().getScheduler().runAsync(AzisabaReport.getInstance(), () -> {
+            String temp_message = "{\n  \"username\": \"%reporter%\",\n  \"avatar_url\": \"https://crafatar.com/avatars/%reporter_uuid%\",\n  \"content\": \""+ConfigManager.getReportBugMention()+"\",\n  \"embeds\": [\n    {\n      \"title\": \"\u9bd6\u540d\",\n      \"color\": 16711680,\n      \"description\": \"%servername%\",\n      \"timestamp\": \"\",\n      \"url\": \"\",\n      \"author\": {\n        \"name\": \"%reporter%\"\n      },\n      \"image\": {},\n      \"thumbnail\": {},\n      \"footer\": {},\n      \"fields\": [\n        {\n          \"name\": \"\u5185\u5bb9\",\n          \"value\": \"%content%\",\n          \"inline\": false\n        },\n        {\n          \"name\": \"UUID\",\n          \"value\": \"%reporter_uuid%\"\n        }\n      ]\n    }\n  ]\n}";
+            String message = temp_message.replace("%servername%", ((ProxiedPlayer) sender).getServer().getInfo().getName()).replace("%reporter%", sender.getName()).replace("%reporter_uuid%", String.valueOf(((ProxiedPlayer) sender).getUniqueId())).replace("%content%", String.join(" ", (CharSequence[]) args).replace("\"", "\\\""));
+            requestWebHook(message, ConfigManager.getReportBugURL());
+        });
     }
 
     private static void requestWebHook(final String json, final URL url) {
