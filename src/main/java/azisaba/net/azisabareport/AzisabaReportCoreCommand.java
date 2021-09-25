@@ -20,17 +20,17 @@ public class AzisabaReportCoreCommand extends Command implements TabExecutor {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        if(args.length<1){
+        if (args.length < 1) {
             sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "The argument is missing!"));
             return;
         }
-        switch (args[0].toLowerCase(Locale.ROOT)){
-            case "setreportmention" :
-                if(!sender.hasPermission("AzisabaReport.setMentions")){
+        switch (args[0].toLowerCase(Locale.ROOT)) {
+            case "setreportmention":
+                if (!sender.hasPermission("AzisabaReport.setMentions")) {
                     sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You don't have a permission!"));
                     return;
                 }
-                if(args.length<2){
+                if (args.length < 2) {
                     sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "The argument is missing! At least two arguments are required."));
                     return;
                 }
@@ -38,12 +38,12 @@ public class AzisabaReportCoreCommand extends Command implements TabExecutor {
                 sender.sendMessage(TextComponent.fromLegacyText(ChatColor.DARK_GREEN + "Succeed to set report mention."));
                 break;
 
-            case "setreportbugmention" :
-                if(!sender.hasPermission("AzisabaReport.setMentions")){
+            case "setreportbugmention":
+                if (!sender.hasPermission("AzisabaReport.setMentions")) {
                     sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You don't have a permission!"));
                     return;
                 }
-                if(args.length<2){
+                if (args.length < 2) {
                     sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "The argument is missing! At least two arguments are required."));
                     return;
                 }
@@ -51,8 +51,8 @@ public class AzisabaReportCoreCommand extends Command implements TabExecutor {
                 sender.sendMessage(TextComponent.fromLegacyText(ChatColor.DARK_GREEN + "Succeed to set report bug mention."));
                 break;
 
-            case "reload" :
-                if(!sender.hasPermission("AzisabaReport.reload")){
+            case "reload":
+                if (!sender.hasPermission("AzisabaReport.reload")) {
                     sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "You don't have a permission!"));
                     return;
                 }
@@ -69,15 +69,15 @@ public class AzisabaReportCoreCommand extends Command implements TabExecutor {
     @Override
     public Iterable<String> onTabComplete(final CommandSender sender, final String[] args) {
         final List<String> commandList = new ArrayList<String>();
-        if(args.length <= 1){
+        if (args.length <= 1) {
             commandList.add("setReportMention");
             commandList.add("setReportBugMention");
             commandList.add("reload");
             return commandList;
         }
 
-        if(args.length<=2){
-            if(args[0].equalsIgnoreCase("setreportmention") || args[0].equalsIgnoreCase("setreportbugmention")){
+        if (args.length <= 2) {
+            if (args[0].equalsIgnoreCase("setreportmention") || args[0].equalsIgnoreCase("setreportbugmention")) {
                 return Collections.singletonList("MentionsList");
             }
         }
