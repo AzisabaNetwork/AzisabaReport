@@ -1,15 +1,15 @@
-package azisaba.net.azisabareport;
+package net.azisaba.azisabareport.commands;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.CommandSender;
-import net.md_5.bungee.api.ProxyServer;
-import net.md_5.bungee.api.chat.TextComponent;
-import net.md_5.bungee.api.connection.ProxiedPlayer;
-import net.md_5.bungee.api.plugin.Command;
-import net.md_5.bungee.api.plugin.TabExecutor;
+import com.velocitypowered.api.command.CommandSource;
+import com.velocitypowered.api.command.SimpleCommand;
+import com.velocitypowered.api.proxy.Player;
+import net.azisaba.azisabareport.AzisabaReport;
+import net.azisaba.azisabareport.ConfigManager;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 
 import javax.net.ssl.HttpsURLConnection;
 import java.io.IOException;
@@ -19,42 +19,44 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
-public class ReportCommand extends Command implements TabExecutor {
-    public ReportCommand() {
-        super("report");
-    }
-
-    public void execute(final CommandSender sender, final String[] args) {
+// /report
+public class ReportCommand implements SimpleCommand {
+    @Override
+    public void execute(Invocation invocation) {
+        CommandSource sender = invocation.source();
+        String[] args = invocation.arguments();
         if (ConfigManager.getReportURL() == null) {
-            sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "エラーが発生しました。運営にこのエラー文のスクショと共に報告してください。[No valid ReportURL]"));
+            sender.sendMessage(Component.text("エラーが発生しました。運営にこのエラー文のスクショと共に報告してください。[No valid ReportURL]").color(NamedTextColor.RED));
             return;
         }
-        if (!(sender instanceof ProxiedPlayer)) {
+        if (!(sender instanceof Player)) {
             // senderがプレイヤーじゃなかったら
-            sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "プレイヤー以外は実行できません。"));
+            sender.sendMessage(Component.text("プレイヤー以外は実行できません。").color(NamedTextColor.RED));
             return;
         }
         if (args.length <= 1) {
-            sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "/report mcid <理由> と記入してください。"));
+            sender.sendMessage(Component.text("/report mcid <理由> と記入してください。").color(NamedTextColor.RED));
             return;
         }
-        if (ProxyServer.getInstance().getPlayer(args[0]) == null) {
-            sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "入力されたプレイヤーが存在しません。"));
+        Optional<Player> player = AzisabaReport.getInstance().getServer().getPlayer(args[0]);
+        if (!player.isPresent()) {
+            sender.sendMessage(Component.text("入力されたプレイヤーが存在しません。").color(NamedTextColor.RED));
             return;
         }
-        sender.sendMessage(TextComponent.fromLegacyText(ChatColor.GREEN + "送信されました。"));
+        sender.sendMessage(Component.text("送信されました。").color(NamedTextColor.RED));
         JsonObject o = new JsonObject();
-        o.add("username", new JsonPrimitive(sender.getName()));
-        o.add("avatar_url", new JsonPrimitive("https://crafatar.com/avatars/" + ((ProxiedPlayer) sender).getUniqueId()));
+        o.add("username", new JsonPrimitive(((Player) sender).getUsername()));
+        o.add("avatar_url", new JsonPrimitive("https://crafatar.com/avatars/" + ((Player) sender).getUniqueId()));
         o.add("content", new JsonPrimitive(ConfigManager.getReportMention()));
         JsonArray embeds = new JsonArray();
         JsonObject embed = new JsonObject();
         embed.add("title", new JsonPrimitive("鯖名"));
         embed.add("color", new JsonPrimitive(16711680));
-        embed.add("description", new JsonPrimitive(((ProxiedPlayer) sender).getServer().getInfo().getName()));
+        embed.add("description", new JsonPrimitive(((Player) sender).getCurrentServer().orElseThrow(IllegalStateException::new).getServerInfo().getName()));
         JsonObject author = new JsonObject();
-        author.add("name", new JsonPrimitive(sender.getName()));
+        author.add("name", new JsonPrimitive(((Player) sender).getUsername()));
         embed.add("author", author);
         JsonArray fields = new JsonArray();
         JsonObject field1 = new JsonObject();
@@ -65,7 +67,7 @@ public class ReportCommand extends Command implements TabExecutor {
         field2.add("value", new JsonPrimitive(String.join(" ", args)));
         JsonObject field3 = new JsonObject();
         field3.add("name", new JsonPrimitive("UUID"));
-        field3.add("value", new JsonPrimitive(ProxyServer.getInstance().getPlayer(args[0]).getUniqueId().toString()));
+        field3.add("value", new JsonPrimitive(player.get().getUniqueId().toString()));
         fields.add(field1);
         fields.add(field2);
         fields.add(field3);
@@ -76,7 +78,7 @@ public class ReportCommand extends Command implements TabExecutor {
     }
 
     public static void requestWebHook(final String json, final URL url) {
-        ProxyServer.getInstance().getScheduler().runAsync(AzisabaReport.getInstance(), () -> {
+        AzisabaReport.getInstance().getServer().getScheduler().buildTask(AzisabaReport.getInstance(), () -> {
             try {
                 final HttpsURLConnection con = (HttpsURLConnection) url.openConnection();
                 con.addRequestProperty("Content-Type", "application/json; charset=utf-8");
@@ -93,20 +95,23 @@ public class ReportCommand extends Command implements TabExecutor {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-        });
+        }).schedule();
     }
 
-    public Iterable<String> onTabComplete(final CommandSender sender, final String[] args) {
-        if (!(sender instanceof ProxiedPlayer)) return null;
+    @Override
+    public List<String> suggest(Invocation invocation) {
+        CommandSource sender = invocation.source();
+        String[] args = invocation.arguments();
+        if (!(sender instanceof Player)) return null;
         String lastArg = "";
         if (args.length != 0) {
             lastArg = args[args.length - 1].toLowerCase();
         }
         if (args.length <= 1) {
             final List<String> players = new ArrayList<>();
-            for (final ProxiedPlayer player : ((ProxiedPlayer) sender).getServer().getInfo().getPlayers()) {
-                if (player.getName().toLowerCase().startsWith(lastArg)) {
-                    players.add(player.getName());
+            for (final Player player : ((Player) sender).getCurrentServer().orElseThrow(IllegalStateException::new).getServer().getPlayersConnected()) {
+                if (player.getUsername().toLowerCase().startsWith(lastArg)) {
+                    players.add(player.getUsername());
                 }
             }
             return players;
