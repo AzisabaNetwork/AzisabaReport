@@ -1,5 +1,6 @@
 package net.azisaba.azisabareport;
 
+import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Plugin;
@@ -19,6 +20,7 @@ public class AzisabaReport {
     private final Logger logger;
     private final Path dataDirectory;
 
+    @Inject
     public AzisabaReport(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
         this.server = server;
         this.logger = logger;

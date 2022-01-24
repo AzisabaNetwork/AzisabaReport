@@ -51,12 +51,16 @@ public class ConfigManager {
         }
 
         try {
-            ReportURL = new URL(Objects.requireNonNull(config.getNode("ReportURL").getString()));
+            if (config.getNode("ReportURL").getString() != null) {
+                ReportURL = new URL(Objects.requireNonNull(config.getNode("ReportURL").getString(), "ReportURL is null"));
+            }
         } catch ( MalformedURLException e ) {
             e.printStackTrace();
         }
         try {
-            ReportBugURL = new URL(Objects.requireNonNull(config.getNode("ReportBugURL").getString()));
+            if (config.getNode("ReportBugURL").getString() != null) {
+                ReportBugURL = new URL(Objects.requireNonNull(config.getNode("ReportBugURL").getString(), "ReportBugURL is null"));
+            }
         } catch ( MalformedURLException e ) {
             e.printStackTrace();
         }

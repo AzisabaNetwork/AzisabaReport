@@ -45,7 +45,7 @@ public class ReportCommand implements SimpleCommand {
             sender.sendMessage(Component.text("入力されたプレイヤーが存在しません。").color(NamedTextColor.RED));
             return;
         }
-        sender.sendMessage(Component.text("送信されました。").color(NamedTextColor.RED));
+        sender.sendMessage(Component.text("送信されました。").color(NamedTextColor.GREEN));
         JsonObject o = new JsonObject();
         o.add("username", new JsonPrimitive(((Player) sender).getUsername()));
         o.add("avatar_url", new JsonPrimitive("https://crafatar.com/avatars/" + ((Player) sender).getUniqueId()));
