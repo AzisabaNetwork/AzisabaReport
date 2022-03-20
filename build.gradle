@@ -1,7 +1,7 @@
 apply plugin: 'java'
 
 group = 'net.azisaba'
-version = '1.2.0'
+version = '1.3.0'
 tasks.withType(AbstractCompile)*.options*.encoding = tasks.withType(GroovyCompile)*.groovyOptions*.encoding = 'UTF-8'
 
 repositories {
@@ -14,10 +14,15 @@ repositories {
         name = 'velocity'
         url = 'https://nexus.velocitypowered.com/repository/maven-public/'
     }
+    maven {
+        name = 'jitpack'
+        url = 'https://jitpack.io/'
+    }
 }
 
 dependencies {
     compileOnly 'com.velocitypowered:velocity-api:3.0.1'
+    compileOnly 'com.github.AzisabaNetwork:VelocityRedisBridge:1.0.1'
     annotationProcessor 'com.velocitypowered:velocity-api:3.0.1'
 }
 

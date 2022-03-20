@@ -8,6 +8,9 @@ import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
 import net.azisaba.azisabareport.AzisabaReport;
 import net.azisaba.azisabareport.ConfigManager;
+import net.azisaba.azisabareport.util.RomajiTextReader;
+import net.azisaba.velocityredisbridge.VelocityRedisBridge;
+import net.azisaba.velocityredisbridge.util.PlayerInfo;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
@@ -17,9 +20,9 @@ import java.io.OutputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 // /report
 public class ReportCommand implements SimpleCommand {
@@ -28,24 +31,31 @@ public class ReportCommand implements SimpleCommand {
         CommandSource sender = invocation.source();
         String[] args = invocation.arguments();
         if (ConfigManager.getReportURL() == null) {
-            sender.sendMessage(Component.text("エラーが発生しました。運営にこのエラー文のスクショと共に報告してください。[No valid ReportURL]").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text("エラーが発生しました。運営にこのエラー文のスクショと共に報告してください。[No valid ReportURL]", NamedTextColor.RED));
             return;
         }
         if (!(sender instanceof Player)) {
             // senderがプレイヤーじゃなかったら
-            sender.sendMessage(Component.text("プレイヤー以外は実行できません。").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text("プレイヤー以外は実行できません。", NamedTextColor.RED));
             return;
         }
         if (args.length <= 1) {
-            sender.sendMessage(Component.text("/report mcid <理由> と記入してください。").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text("/report mcid <理由> と記入してください。", NamedTextColor.RED));
             return;
         }
-        Optional<Player> player = AzisabaReport.getInstance().getServer().getPlayer(args[0]);
-        if (!player.isPresent()) {
-            sender.sendMessage(Component.text("入力されたプレイヤーが存在しません。").color(NamedTextColor.RED));
+        PlayerInfo player = null;
+        for (PlayerInfo playerInfo : VelocityRedisBridge.getApi().getAllPlayerInfo()) {
+            if (playerInfo.getUsername().equalsIgnoreCase(args[0])) {
+                player = playerInfo;
+                break;
+            }
+        }
+        if (player == null) {
+            sender.sendMessage(Component.text("入力されたプレイヤーが存在しません。", NamedTextColor.RED));
             return;
         }
-        sender.sendMessage(Component.text("送信されました。").color(NamedTextColor.GREEN));
+        sender.sendMessage(Component.text("送信されました。", NamedTextColor.GREEN));
+        sender.sendMessage(Component.text("注意: 証拠を内容に含めていない場合は証拠を内容に含めて送信するか、Discordのサポート受付へ送信してください。", NamedTextColor.GOLD));
         JsonObject o = new JsonObject();
         o.add("username", new JsonPrimitive(((Player) sender).getUsername()));
         o.add("avatar_url", new JsonPrimitive("https://crafatar.com/avatars/" + ((Player) sender).getUniqueId()));
@@ -61,16 +71,20 @@ public class ReportCommand implements SimpleCommand {
         JsonArray fields = new JsonArray();
         JsonObject field1 = new JsonObject();
         field1.add("name", new JsonPrimitive("対象者"));
-        field1.add("value", new JsonPrimitive(args[0]));
+        field1.add("value", new JsonPrimitive(player.getUsername()));
         JsonObject field2 = new JsonObject();
         field2.add("name", new JsonPrimitive("内容"));
-        field2.add("value", new JsonPrimitive(String.join(" ", args)));
+        field2.add("value", new JsonPrimitive(RomajiTextReader.convert(String.join(" ", dropFirst(args)))));
         JsonObject field3 = new JsonObject();
-        field3.add("name", new JsonPrimitive("UUID"));
-        field3.add("value", new JsonPrimitive(player.get().getUniqueId().toString()));
+        field3.add("name", new JsonPrimitive("処理前の内容"));
+        field3.add("value", new JsonPrimitive(String.join(" ", dropFirst(args))));
+        JsonObject field4 = new JsonObject();
+        field4.add("name", new JsonPrimitive("UUID"));
+        field4.add("value", new JsonPrimitive(player.getUuid().toString()));
         fields.add(field1);
         fields.add(field2);
         fields.add(field3);
+        fields.add(field4);
         embed.add("fields", fields);
         embeds.add(embed);
         o.add("embeds", embeds);
@@ -96,6 +110,14 @@ public class ReportCommand implements SimpleCommand {
                 e.printStackTrace();
             }
         }).schedule();
+    }
+
+    private static String[] dropFirst(String[] array) {
+        if (array.length == 0) throw new IllegalArgumentException("length == 0");
+        if (array.length == 1) return new String[0];
+        List<String> list = new ArrayList<>(Arrays.asList(array));
+        list.remove(0);
+        return list.toArray(new String[0]);
     }
 
     @Override

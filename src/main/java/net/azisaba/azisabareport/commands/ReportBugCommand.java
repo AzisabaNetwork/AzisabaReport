@@ -7,6 +7,7 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
 import net.azisaba.azisabareport.ConfigManager;
+import net.azisaba.azisabareport.util.RomajiTextReader;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 
@@ -20,19 +21,20 @@ public class ReportBugCommand implements SimpleCommand {
         CommandSource sender = invocation.source();
         String[] args = invocation.arguments();
         if (ConfigManager.getReportBugURL() == null) {
-            sender.sendMessage(Component.text("エラーが発生しました。運営にこのエラー文のスクショと共に報告してください。[No valid ReportBugURL]").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text("エラーが発生しました。運営にこのエラー文のスクショと共に報告してください。[No valid ReportBugURL]", NamedTextColor.RED));
             return;
         }
         if (!(sender instanceof Player)) {
             // senderがプレイヤーじゃなかったら
-            sender.sendMessage(Component.text("プレイヤー以外は実行できません。").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text("プレイヤー以外は実行できません。", NamedTextColor.RED));
             return;
         }
         if (args.length == 0) {
-            sender.sendMessage(Component.text("/reportbug <内容> と記入してください。").color(NamedTextColor.RED));
+            sender.sendMessage(Component.text("/reportbug <内容> と記入してください。", NamedTextColor.RED));
             return;
         }
-        sender.sendMessage(Component.text("送信されました。").color(NamedTextColor.GREEN));
+        sender.sendMessage(Component.text("送信されました。", NamedTextColor.GREEN));
+        sender.sendMessage(Component.text("注意: 複雑なバグの場合はreportbugを使用せず、Discordのサポート受付へ送信してください。", NamedTextColor.GOLD));
         JsonObject o = new JsonObject();
         o.add("username", new JsonPrimitive(((Player) sender).getUsername()));
         o.add("avatar_url", new JsonPrimitive("https://crafatar.com/avatars/" + ((Player) sender).getUniqueId()));
@@ -48,12 +50,16 @@ public class ReportBugCommand implements SimpleCommand {
         JsonArray fields = new JsonArray();
         JsonObject field1 = new JsonObject();
         field1.add("name", new JsonPrimitive("内容"));
-        field1.add("value", new JsonPrimitive(String.join(" ", args)));
+        field1.add("value", new JsonPrimitive(RomajiTextReader.convert(String.join(" ", args))));
         JsonObject field2 = new JsonObject();
-        field2.add("name", new JsonPrimitive("UUID"));
-        field2.add("value", new JsonPrimitive(((Player) sender).getUniqueId().toString()));
+        field2.add("name", new JsonPrimitive("処理前の内容"));
+        field2.add("value", new JsonPrimitive(String.join(" ", args)));
+        JsonObject field3 = new JsonObject();
+        field3.add("name", new JsonPrimitive("UUID"));
+        field3.add("value", new JsonPrimitive(((Player) sender).getUniqueId().toString()));
         fields.add(field1);
         fields.add(field2);
+        fields.add(field3);
         embed.add("fields", fields);
         embeds.add(embed);
         o.add("embeds", embeds);
