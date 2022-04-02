@@ -79,12 +79,16 @@ public class ReportCommand implements SimpleCommand {
         field3.add("name", new JsonPrimitive("処理前の内容"));
         field3.add("value", new JsonPrimitive(String.join(" ", dropFirst(args))));
         JsonObject field4 = new JsonObject();
-        field4.add("name", new JsonPrimitive("UUID"));
-        field4.add("value", new JsonPrimitive(player.getUuid().toString()));
+        field4.add("name", new JsonPrimitive("証拠"));
+        field4.add("name", new JsonPrimitive(String.join(" ", args)));
+        JsonObject field5 = new JsonObject();
+        field5.add("name", new JsonPrimitive("UUID"));
+        field5.add("value", new JsonPrimitive(player.getUuid().toString()));
         fields.add(field1);
         fields.add(field2);
         fields.add(field3);
         fields.add(field4);
+        fields.add(field5);
         embed.add("fields", fields);
         embeds.add(embed);
         o.add("embeds", embeds);
