@@ -28,4 +28,4 @@ jobs:
           cache: 'gradle'
 
       - run: chmod +x ./gradle
-      - run: ./gradle build
+      - run: ./gradlew build
