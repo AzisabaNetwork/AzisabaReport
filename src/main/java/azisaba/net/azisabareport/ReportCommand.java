@@ -36,7 +36,7 @@ public class ReportCommand extends Command implements TabExecutor {
             return;
         }
         if (args.length <= 1) {
-            sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "/report mcid <理由> と記入してください。"));
+            sender.sendMessage(TextComponent.fromLegacyText(ChatColor.RED + "/report mcid <理由> <証拠> と記入してください。"));
             return;
         }
         if (ProxyServer.getInstance().getPlayer(args[0]) == null) {
