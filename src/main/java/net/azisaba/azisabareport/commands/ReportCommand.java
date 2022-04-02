@@ -41,6 +41,7 @@ public class ReportCommand implements SimpleCommand {
         }
         if (args.length <= 1) {
             sender.sendMessage(Component.text("/report mcid <証拠> <理由> と記入してください。", NamedTextColor.RED));
+            sender.sendMessage(Component.text("証拠を含めることができない場合は公式Discord #サポート受付 で通報をしてください。"));
             return;
         }
         PlayerInfo player = null;
