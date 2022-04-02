@@ -40,7 +40,7 @@ public class ReportCommand implements SimpleCommand {
             return;
         }
         if (args.length <= 1) {
-            sender.sendMessage(Component.text("/report mcid <理由> と記入してください。", NamedTextColor.RED));
+            sender.sendMessage(Component.text("/report mcid <証拠> <理由> と記入してください。", NamedTextColor.RED));
             return;
         }
         PlayerInfo player = null;
