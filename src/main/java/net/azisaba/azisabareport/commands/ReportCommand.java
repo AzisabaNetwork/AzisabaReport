@@ -55,7 +55,6 @@ public class ReportCommand implements SimpleCommand {
             return;
         }
         sender.sendMessage(Component.text("送信されました。", NamedTextColor.GREEN));
-        sender.sendMessage(Component.text("注意: 証拠を内容に含めていない場合は証拠を内容に含めて送信するか、Discordのサポート受付へ送信してください。", NamedTextColor.GOLD));
         JsonObject o = new JsonObject();
         o.add("username", new JsonPrimitive(((Player) sender).getUsername()));
         o.add("avatar_url", new JsonPrimitive("https://crafatar.com/avatars/" + ((Player) sender).getUniqueId()));
