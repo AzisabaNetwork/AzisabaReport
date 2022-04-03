@@ -73,22 +73,18 @@ public class ReportCommand implements SimpleCommand {
         field1.add("name", new JsonPrimitive("対象者"));
         field1.add("value", new JsonPrimitive(player.getUsername()));
         JsonObject field2 = new JsonObject();
-        field2.add("name", new JsonPrimitive("内容"));
+        field2.add("name", new JsonPrimitive("理由/証拠"));
         field2.add("value", new JsonPrimitive(RomajiTextReader.convert(String.join(" ", dropFirst(args)))));
         JsonObject field3 = new JsonObject();
         field3.add("name", new JsonPrimitive("処理前の内容"));
         field3.add("value", new JsonPrimitive(String.join(" ", dropFirst(args))));
         JsonObject field4 = new JsonObject();
-        field4.add("name", new JsonPrimitive("証拠"));
-        field4.add("name", new JsonPrimitive(String.join(" ", args)));
-        JsonObject field5 = new JsonObject();
-        field5.add("name", new JsonPrimitive("UUID"));
-        field5.add("value", new JsonPrimitive(player.getUuid().toString()));
+        field4.add("name", new JsonPrimitive("UUID"));
+        field4.add("value", new JsonPrimitive(player.getUuid().toString()));
         fields.add(field1);
         fields.add(field2);
         fields.add(field3);
         fields.add(field4);
-        fields.add(field5);
         embed.add("fields", fields);
         embeds.add(embed);
         o.add("embeds", embeds);
@@ -142,6 +138,6 @@ public class ReportCommand implements SimpleCommand {
             }
             return players;
         }
-        return Collections.singletonList("理由");
+        return Collections.singletonList("理由/証拠");
     }
 }
