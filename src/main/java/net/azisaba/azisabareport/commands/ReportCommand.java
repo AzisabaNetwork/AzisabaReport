@@ -40,7 +40,8 @@ public class ReportCommand implements SimpleCommand {
             return;
         }
         if (args.length <= 1) {
-            sender.sendMessage(Component.text("/report mcid <理由> と記入してください。", NamedTextColor.RED));
+            sender.sendMessage(Component.text("/report mcid <証拠> <理由> と記入してください。", NamedTextColor.RED));
+            sender.sendMessage(Component.text("証拠を含めることができない場合は公式Discord #サポート受付 で通報をしてください。"));
             return;
         }
         PlayerInfo player = null;
@@ -55,7 +56,6 @@ public class ReportCommand implements SimpleCommand {
             return;
         }
         sender.sendMessage(Component.text("送信されました。", NamedTextColor.GREEN));
-        sender.sendMessage(Component.text("注意: 証拠を内容に含めていない場合は証拠を内容に含めて送信するか、Discordのサポート受付へ送信してください。", NamedTextColor.GOLD));
         JsonObject o = new JsonObject();
         o.add("username", new JsonPrimitive(((Player) sender).getUsername()));
         o.add("avatar_url", new JsonPrimitive("https://crafatar.com/avatars/" + ((Player) sender).getUniqueId()));
@@ -73,7 +73,7 @@ public class ReportCommand implements SimpleCommand {
         field1.add("name", new JsonPrimitive("対象者"));
         field1.add("value", new JsonPrimitive(player.getUsername()));
         JsonObject field2 = new JsonObject();
-        field2.add("name", new JsonPrimitive("内容"));
+        field2.add("name", new JsonPrimitive("理由/証拠"));
         field2.add("value", new JsonPrimitive(RomajiTextReader.convert(String.join(" ", dropFirst(args)))));
         JsonObject field3 = new JsonObject();
         field3.add("name", new JsonPrimitive("処理前の内容"));
@@ -138,6 +138,6 @@ public class ReportCommand implements SimpleCommand {
             }
             return players;
         }
-        return Collections.singletonList("理由");
+        return Collections.singletonList("理由/証拠");
     }
 }
