@@ -55,6 +55,11 @@ public class ReportCommand implements SimpleCommand {
             sender.sendMessage(Component.text("入力されたプレイヤーが存在しません。", NamedTextColor.RED));
             return;
         }
+        String message = String.join(" ", dropFirst(args));
+        if (!message.contains("https://")) {
+            sender.sendMessage(Component.text("内容にURLを含めてください。", NamedTextColor.RED));
+            return;
+        }
         sender.sendMessage(Component.text("送信されました。", NamedTextColor.GREEN));
         JsonObject o = new JsonObject();
         o.add("username", new JsonPrimitive(((Player) sender).getUsername()));
@@ -74,10 +79,10 @@ public class ReportCommand implements SimpleCommand {
         field1.add("value", new JsonPrimitive(player.getUsername()));
         JsonObject field2 = new JsonObject();
         field2.add("name", new JsonPrimitive("理由/証拠"));
-        field2.add("value", new JsonPrimitive(RomajiTextReader.convert(String.join(" ", dropFirst(args)))));
+        field2.add("value", new JsonPrimitive(RomajiTextReader.convert(message)));
         JsonObject field3 = new JsonObject();
         field3.add("name", new JsonPrimitive("処理前の内容"));
-        field3.add("value", new JsonPrimitive(String.join(" ", dropFirst(args))));
+        field3.add("value", new JsonPrimitive(message));
         JsonObject field4 = new JsonObject();
         field4.add("name", new JsonPrimitive("UUID"));
         field4.add("value", new JsonPrimitive(player.getUuid().toString()));
