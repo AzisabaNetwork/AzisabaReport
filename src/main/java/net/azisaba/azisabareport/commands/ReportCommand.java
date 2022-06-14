@@ -145,4 +145,9 @@ public class ReportCommand implements SimpleCommand {
         }
         return Collections.singletonList("理由/証拠");
     }
+
+    @Override
+    public boolean hasPermission(Invocation invocation) {
+        return invocation.source().hasPermission("azisabareport.report");
+    }
 }

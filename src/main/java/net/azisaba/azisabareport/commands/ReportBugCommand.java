@@ -73,4 +73,9 @@ public class ReportBugCommand implements SimpleCommand {
         }
         return Collections.emptyList();
     }
+
+    @Override
+    public boolean hasPermission(Invocation invocation) {
+        return invocation.source().hasPermission("azisabareport.reportbug");
+    }
 }
