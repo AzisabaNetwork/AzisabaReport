@@ -1,14 +1,14 @@
-package net.azisaba.azisabareport;
+package net.azisaba.azisabareport.velocity;
 
+import net.azisaba.azisabareport.velocity.commands.ReportCommand;
 import com.google.inject.Inject;
 import com.velocitypowered.api.event.Subscribe;
 import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
 import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
-import net.azisaba.azisabareport.commands.AzisabaReportCoreCommand;
-import net.azisaba.azisabareport.commands.ReportBugCommand;
-import net.azisaba.azisabareport.commands.ReportCommand;
+import net.azisaba.azisabareport.velocity.commands.AzisabaReportCoreCommand;
+import net.azisaba.azisabareport.velocity.commands.ReportBugCommand;
 import org.slf4j.Logger;
 
 import java.nio.file.Path;
@@ -33,7 +33,7 @@ public class AzisabaReport {
     public void onProxyInitialization(ProxyInitializeEvent event) {
         server.getCommandManager().register("report", new ReportCommand());
         server.getCommandManager().register("reportbug", new ReportBugCommand());
-        server.getCommandManager().register("azisabareport", new AzisabaReportCoreCommand());
+        server.getCommandManager().register("net/azisaba/azisabareport/velocity", new AzisabaReportCoreCommand());
     }
 
     private static AzisabaReport plugin;

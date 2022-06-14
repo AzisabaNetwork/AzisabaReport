@@ -1,8 +1,8 @@
-package net.azisaba.azisabareport.commands;
+package net.azisaba.azisabareport.velocity.commands;
 
+import net.azisaba.azisabareport.velocity.ConfigManager;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
-import net.azisaba.azisabareport.ConfigManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 

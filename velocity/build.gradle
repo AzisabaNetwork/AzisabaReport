@@ -1,0 +1,24 @@
+repositories {
+    mavenCentral()
+    maven {
+        name = 'sonatype'
+        url = 'https://oss.sonatype.org/content/groups/public/'
+    }
+    maven {
+        name = 'velocity'
+        url = 'https://nexus.velocitypowered.com/repository/maven-public/'
+    }
+    maven {
+        name = 'jitpack'
+        url = 'https://jitpack.io/'
+    }
+}
+
+dependencies {
+    implementation project(':common')
+    compileOnly 'com.velocitypowered:velocity-api:3.0.1'
+    compileOnly 'com.github.AzisabaNetwork:VelocityRedisBridge:1.0.1'
+    annotationProcessor 'com.velocitypowered:velocity-api:3.0.1'
+}
+
+tasks.withType(org.gradle.jvm.tasks.Jar.class)*.baseName("AzisabaReport-Velocity")

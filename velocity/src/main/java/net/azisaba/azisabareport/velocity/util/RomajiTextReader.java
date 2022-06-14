@@ -1,4 +1,4 @@
-package net.azisaba.azisabareport.util;
+package net.azisaba.azisabareport.velocity.util;
 
 import org.jetbrains.annotations.NotNull;
 

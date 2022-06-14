@@ -1,13 +1,13 @@
-package net.azisaba.azisabareport.commands;
+package net.azisaba.azisabareport.velocity.commands;
 
+import net.azisaba.azisabareport.velocity.ConfigManager;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
-import net.azisaba.azisabareport.ConfigManager;
-import net.azisaba.azisabareport.util.RomajiTextReader;
+import net.azisaba.azisabareport.velocity.util.RomajiTextReader;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 

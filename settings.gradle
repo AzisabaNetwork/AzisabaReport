@@ -1,1 +1,5 @@
 rootProject.name = 'AzisabaReport'
+include 'spigot'
+include 'velocity'
+include 'common'
+

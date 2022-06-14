@@ -1,4 +1,4 @@
-package net.azisaba.azisabareport;
+package net.azisaba.azisabareport.velocity;
 
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.yaml.YAMLConfigurationLoader;
