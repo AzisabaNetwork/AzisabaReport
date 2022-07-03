@@ -9,3 +9,6 @@ ReportBugURL:
 
 ReportMention:
 ReportBugMention:
+
+ReportCT:
+# Note: Specify in seconds
