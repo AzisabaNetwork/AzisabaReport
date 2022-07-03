@@ -17,6 +17,7 @@ public class ConfigManager {
     private static URL ReportBugURL = null;
     private static String ReportMention = "";
     private static String ReportBugMention = "";
+    private static int ReportCoolTime = 10;
 
 
     public static void loadConfig() {
@@ -67,6 +68,7 @@ public class ConfigManager {
 
         ReportMention = config.getNode("ReportMention").getString();
         ReportBugMention = config.getNode("ReportBugMention").getString();
+        ReportCoolTime = config.getNode("ReportCT").getInt(10);
     }
 
     public static URL getReportURL() {
@@ -83,6 +85,10 @@ public class ConfigManager {
 
     public static String getReportBugMention() {
         return ReportBugMention;
+    }
+
+    public static int getReportCoolTime() {
+        return ReportCoolTime;
     }
 
     public static void setReportMention(String st) {
