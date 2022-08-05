@@ -8,7 +8,7 @@ public class CoolTime {
 
   /**
    * クールダウン中か
-   * @param playerName playerName(Player.getUniqueId().toString())
+   * @param playerName playerName(Player.getUserName())
    * @param coolTime ミリ秒
    * @return result true=クールダウン中　false=クールダウン終了
    */
@@ -21,7 +21,7 @@ public class CoolTime {
 
   /**
    * クールダウンのスタート
-   * @param playerName playerName(Player.getUniqueId().toString())
+   * @param playerName playerName(Player.getUserName())
    */
   public static void startCoolDown(String playerName){
     coolDownMap.remove(playerName);
