@@ -61,7 +61,7 @@ public class ReportCommand implements SimpleCommand {
             sender.sendMessage(Component.text("内容にURLを含めてください。", NamedTextColor.RED));
             return;
         }
-        if(CoolTime.isCoolDown(((Player) sender).getUsername(), 1000*60*3)) {
+        if (CoolTime.isCoolDown(((Player) sender).getUsername(), 1000*60*3)) {
             sender.sendMessage(Component.text("3分以内に連続で通報することはできません", NamedTextColor.RED));
             return;
         }
