@@ -7,6 +7,7 @@ import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
 import net.azisaba.azisabareport.ConfigManager;
+import net.azisaba.azisabareport.util.CoolTime;
 import net.azisaba.azisabareport.util.RomajiTextReader;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -31,6 +32,10 @@ public class ReportBugCommand implements SimpleCommand {
         }
         if (args.length == 0) {
             sender.sendMessage(Component.text("/reportbug <内容> と記入してください。", NamedTextColor.RED));
+            return;
+        }
+        if(CoolTime.isCoolDown(((Player) sender).getUsername(), 1000*60*3)) {
+            sender.sendMessage(Component.text("3分以内に連続で通報することはできません", NamedTextColor.RED));
             return;
         }
         sender.sendMessage(Component.text("送信されました。", NamedTextColor.GREEN));
@@ -64,6 +69,7 @@ public class ReportBugCommand implements SimpleCommand {
         embeds.add(embed);
         o.add("embeds", embeds);
         ReportCommand.requestWebHook(o.toString(), ConfigManager.getReportBugURL());
+        CoolTime.startCoolDown(((Player) sender).getUsername());
     }
 
     @Override
