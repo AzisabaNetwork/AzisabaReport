@@ -13,10 +13,10 @@ public class CoolTime {
    * @return result true=クールダウン中　false=クールダウン終了
    */
   public static boolean isCoolDown(String playerName, long coolTime){
-    if (!coolDownMap.containsKey(playerName)) return false;
-    long now = System.currentTimeMillis();
-    long before = coolDownMap.get(playerName);
-    return now - before < coolTime;
+      if (!coolDownMap.containsKey(playerName)) return false;
+      long now = System.currentTimeMillis();
+      long before = coolDownMap.get(playerName);
+      return now - before < coolTime;
   }
 
   /**
@@ -24,6 +24,6 @@ public class CoolTime {
    * @param playerName playerName(Player.getUserName())
    */
   public static void startCoolDown(String playerName){
-    coolDownMap.put(playerName,System.currentTimeMillis());
+      coolDownMap.put(playerName,System.currentTimeMillis());
   }
 }
