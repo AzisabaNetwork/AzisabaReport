@@ -24,6 +24,6 @@ public class CoolTime {
      * @param playerName playerName(Player.getUserName())
      */
     public static void startCoolDown(String playerName){
-        coolDownMap.put(playerName,System.currentTimeMillis());
+        coolDownMap.put(playerName, System.currentTimeMillis());
     }
 }
