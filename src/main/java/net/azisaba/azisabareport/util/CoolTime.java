@@ -4,7 +4,7 @@ import java.util.HashMap;
 
 public class CoolTime {
     //  プレイヤーごとに分けるため、Mapで保存
-    private static HashMap<String,Long> coolDownMap = new HashMap<>();
+    private static HashMap<String, Long> coolDownMap = new HashMap<>();
 
     /**
      * クールダウン中か
