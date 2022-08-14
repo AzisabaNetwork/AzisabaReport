@@ -38,6 +38,7 @@ public class ReportBugCommand implements SimpleCommand {
             sender.sendMessage(Component.text("3分以内に連続で通報することはできません", NamedTextColor.RED));
             return;
         }
+        CoolTime.startCoolDown(((Player) sender).getUsername());
         sender.sendMessage(Component.text("送信されました。", NamedTextColor.GREEN));
         sender.sendMessage(Component.text("注意: 複雑なバグの場合はreportbugを使用せず、Discordのサポート受付へ送信してください。", NamedTextColor.GOLD));
         JsonObject o = new JsonObject();
@@ -69,7 +70,6 @@ public class ReportBugCommand implements SimpleCommand {
         embeds.add(embed);
         o.add("embeds", embeds);
         ReportCommand.requestWebHook(o.toString(), ConfigManager.getReportBugURL());
-        CoolTime.startCoolDown(((Player) sender).getUsername());
     }
 
     @Override

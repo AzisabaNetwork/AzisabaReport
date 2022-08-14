@@ -65,6 +65,7 @@ public class ReportCommand implements SimpleCommand {
             sender.sendMessage(Component.text("3分以内に連続で通報することはできません", NamedTextColor.RED));
             return;
         }
+        CoolTime.startCoolDown(((Player) sender).getUsername());
         sender.sendMessage(Component.text("送信されました。", NamedTextColor.GREEN));
         JsonObject o = new JsonObject();
         o.add("username", new JsonPrimitive(((Player) sender).getUsername()));
@@ -99,7 +100,6 @@ public class ReportCommand implements SimpleCommand {
         embeds.add(embed);
         o.add("embeds", embeds);
         requestWebHook(o.toString(), ConfigManager.getReportURL());
-        CoolTime.startCoolDown(((Player) sender).getUsername());
     }
 
     public static void requestWebHook(final String json, final URL url) {
