@@ -8,6 +8,7 @@ import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
 import net.azisaba.azisabareport.AzisabaReport;
 import net.azisaba.azisabareport.ConfigManager;
+import net.azisaba.azisabareport.util.CoolTime;
 import net.azisaba.azisabareport.util.RomajiTextReader;
 import net.azisaba.velocityredisbridge.VelocityRedisBridge;
 import net.azisaba.velocityredisbridge.util.PlayerInfo;
@@ -60,6 +61,11 @@ public class ReportCommand implements SimpleCommand {
             sender.sendMessage(Component.text("内容にURLを含めてください。", NamedTextColor.RED));
             return;
         }
+        if (CoolTime.isCoolDown(((Player) sender).getUsername(), 1000*60*3)) {
+            sender.sendMessage(Component.text("3分以内に連続で通報することはできません", NamedTextColor.RED));
+            return;
+        }
+        CoolTime.startCoolDown(((Player) sender).getUsername());
         sender.sendMessage(Component.text("送信されました。", NamedTextColor.GREEN));
         JsonObject o = new JsonObject();
         o.add("username", new JsonPrimitive(((Player) sender).getUsername()));
