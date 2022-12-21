@@ -15,12 +15,14 @@ import net.azisaba.azisabareport.velocity.listener.PlayerListener;
 import net.azisaba.azisabareport.velocity.listener.PluginMessageListener;
 import net.azisaba.azisabareport.velocity.message.Messages;
 import net.azisaba.azisabareport.velocity.sql.DatabaseManager;
+import net.azisaba.azisabareport.velocity.tasks.CheckClosedReportTask;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.concurrent.TimeUnit;
 
 @Plugin(id = "azisabareport", name = "AzisabaReport", version = "dev-SNAPSHOT",
         url = "https://azisaba.net")
@@ -52,6 +54,11 @@ public class AzisabaReport {
         server.getChannelRegistrar().register(
                 new LegacyChannelIdentifier("AZIREPORT"),
                 MinecraftChannelIdentifier.create("azisabareport", "chat"));
+        server.getScheduler()
+                .buildTask(this, new CheckClosedReportTask(this))
+                .delay(30, TimeUnit.SECONDS)
+                .repeat(1, TimeUnit.MINUTES)
+                .schedule();
     }
 
     public @NotNull ProxyServer getServer() {

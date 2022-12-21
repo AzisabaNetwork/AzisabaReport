@@ -6,6 +6,7 @@ import net.azisaba.azisabareport.velocity.data.PlayerData;
 import net.azisaba.azisabareport.velocity.data.ReportData;
 import org.jetbrains.annotations.NotNull;
 
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -31,25 +32,16 @@ public class DataProvider {
         }
     }
 
-    public static @NotNull List<ReportData> getReportsFor(@NotNull DatabaseManager db, @NotNull UUID uuid) {
+    public static @NotNull Optional<PlayerData> getPlayerDataById(@NotNull DatabaseManager db, @NotNull UUID uuid) {
         try {
-            return db.query("SELECT * FROM `reports` WHERE `reported_id` = ?", ps -> {
+            return db.query("SELECT `name` FROM `players` WHERE `id` = ?", ps -> {
                 ps.setString(1, uuid.toString());
                 try (ResultSet rs = ps.executeQuery()) {
-                    List<ReportData> list = new ArrayList<>();
-                    while (rs.next()) {
-                        long id = rs.getLong("id");
-                        UUID reporterId = UUID.fromString(rs.getString("reporter_id"));
-                        UUID reportedId = UUID.fromString(rs.getString("reported_id"));
-                        String reason = rs.getString("reason");
-                        int flags = rs.getInt("flags");
-                        String publicComment = rs.getString("public_comment");
-                        String comment = rs.getString("comment");
-                        long createdAt = rs.getTimestamp("created_at").getTime();
-                        long updatedAt = rs.getTimestamp("updated_at").getTime();
-                        list.add(new ReportData(id, reporterId, reportedId, reason, BitField.of(flags), publicComment, comment, createdAt, updatedAt));
+                    if (rs.next()) {
+                        return Optional.of(new PlayerData(uuid, rs.getString("name")));
+                    } else {
+                        return Optional.empty();
                     }
-                    return list;
                 }
             });
         } catch (SQLException e) {
@@ -57,10 +49,52 @@ public class DataProvider {
         }
     }
 
+    public static @NotNull List<ReportData> getReportsFor(@NotNull DatabaseManager db, @NotNull UUID uuid) {
+        try {
+            return db.query("SELECT * FROM `reports` WHERE `reported_id` = ?", ps -> {
+                ps.setString(1, uuid.toString());
+                return collectReportData(ps);
+            });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NotNull List<ReportData> getRecentReports(@NotNull DatabaseManager db) {
+        try {
+            return db.query("SELECT * FROM `reports` WHERE `updated_at` >= ?", ps -> {
+                ps.setLong(1, System.currentTimeMillis() - 1000 * 60 * 60 * 24);
+                return collectReportData(ps);
+            });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @NotNull
+    private static List<ReportData> collectReportData(@NotNull PreparedStatement ps) throws SQLException {
+        try (ResultSet rs = ps.executeQuery()) {
+            List<ReportData> list = new ArrayList<>();
+            while (rs.next()) {
+                long id = rs.getLong("id");
+                UUID reporterId = UUID.fromString(rs.getString("reporter_id"));
+                UUID reportedId = UUID.fromString(rs.getString("reported_id"));
+                String reason = rs.getString("reason");
+                int flags = rs.getInt("flags");
+                String publicComment = rs.getString("public_comment");
+                String comment = rs.getString("comment");
+                long createdAt = rs.getTimestamp("created_at").getTime();
+                long updatedAt = rs.getTimestamp("updated_at").getTime();
+                list.add(new ReportData(id, reporterId, reportedId, reason, BitField.of(flags), publicComment, comment, createdAt, updatedAt));
+            }
+            return list;
+        }
+    }
+
     public static @NotNull List<ReportData> getActiveReportsFor(@NotNull DatabaseManager db, @NotNull UUID uuid) {
         return getReportsFor(db, uuid)
                 .stream()
-                .filter(r -> r.createdAt() + 1000 * 60 * 60 * 24 > System.currentTimeMillis()) // created in 24 hours
+                .filter(r -> r.updatedAt() + 1000 * 60 * 60 * 24 > System.currentTimeMillis()) // created in 24 hours
                 .filter(r -> !r.flags().contains(ReportData.CLOSED)) // not closed
                 .toList();
     }

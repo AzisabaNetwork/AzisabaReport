@@ -21,9 +21,9 @@ public record ReportData(
 ) {
     public static final int OPEN = 1;
     public static final int CLOSED = 1 << 1;
-    public static final int RESOLVED = 1 << 2;
-    public static final int INVALID = 1 << 3;
-    public static final int NEED_MORE_PROOFS = 1 << 4;
+    public static final int RESOLVED = 1 << 2; // reviewed and handled by the staff
+    public static final int INVALID = 1 << 3; // invalid report
+    public static final int NEED_MORE_PROOFS = 1 << 4; // needs more proofs to be reviewed
 
     @Contract("_ -> new")
     public @NotNull ReportData flags(@NotNull UnaryOperator<BitField> flags) {
