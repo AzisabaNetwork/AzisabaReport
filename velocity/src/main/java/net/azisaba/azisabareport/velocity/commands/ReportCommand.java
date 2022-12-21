@@ -62,6 +62,21 @@ public class ReportCommand extends AbstractCommand {
         this.plugin = plugin;
     }
 
+    @Override
+    public @NotNull LiteralArgumentBuilder<CommandSource> createBuilder() {
+        return literal("report")
+                .requires(sender -> sender.hasPermission("azisabareport.command.report"))
+                .then(argument("player", StringArgumentType.word())
+                        .executes(ctx -> executeNoReason(ctx.getSource(), StringArgumentType.getString(ctx, "player")))
+                        .then(argument("reason", StringArgumentType.greedyString())
+                                .suggests((context, builder) -> suggest(getReasons(context.getSource()), builder))
+                                .executes(ctx ->
+                                        execute(ctx.getSource(), StringArgumentType.getString(ctx, "player"), StringArgumentType.getString(ctx, "reason"))
+                                )
+                        )
+                );
+    }
+
     private static @NotNull Set<@NotNull String> getReasonsInAllLocales(@NotNull Stream<String> keyStream) {
         return keyStream
                 .map(key -> "command.report.reason." + key)
@@ -86,24 +101,15 @@ public class ReportCommand extends AbstractCommand {
 
     private int executeNoReason(@NotNull CommandSource source, @NotNull String player) {
         new Thread(() -> {
-            Optional<PlayerData> opt = DataProvider.getPlayerDataByName(plugin.getDatabaseManager(), player);
-            if (opt.isEmpty()) {
-                sendMessageMissingPlayer(source, player);
-                return;
-            }
-            PlayerData data = opt.get();
-            List<ReportData> reports = DataProvider.getReportsFor(plugin.getDatabaseManager(), data.uuid());
-            List<ReportData> validReports =
-                    reports.stream()
-                            .filter(r -> r.createdAt() + 1000 * 60 * 60 * 24 > System.currentTimeMillis()) // created in 24 hours
-                            .filter(r -> !r.flags().contains(ReportData.CLOSED)) // not closed
-                            .toList();
+            PlayerData data = getPlayerDataNoSelf(source, player);
+            if (data == null) return;
+            List<ReportData> reports = DataProvider.getActiveReportsFor(plugin.getDatabaseManager(), data.uuid());
             Messages.sendFormatted(source, "command.report.no_reason.header", data.name());
-            boolean alreadyReportedChat = CHAT_REASON_KEYS.stream().anyMatch(key -> validReports.stream().anyMatch(r -> key.equals(findReasonKey(r.reason()))));
+            boolean alreadyReportedChat = CHAT_REASON_KEYS.stream().anyMatch(key -> reports.stream().anyMatch(r -> key.equals(findReasonKey(r.reason()))));
             for (String key : REASON_KEYS) {
                 String reason = Messages.getRawMessage(source, "command.report.reason." + key);
                 Component component = Messages.getFormattedComponent(source, "command.report.no_reason.entry.circle", reason);
-                if (validReports.stream().anyMatch(r -> key.equals(findReasonKey(r.reason()))) || (alreadyReportedChat && CHAT_REASON_KEYS.contains(key))) {
+                if (reports.stream().anyMatch(r -> key.equals(findReasonKey(r.reason()))) || (alreadyReportedChat && CHAT_REASON_KEYS.contains(key))) {
                     // active report exists
                     component = component.color(NamedTextColor.DARK_GRAY);
                     component = component.hoverEvent(HoverEvent.showText(Messages.getFormattedComponent(source, "command.report.already_reported")));
@@ -120,24 +126,10 @@ public class ReportCommand extends AbstractCommand {
 
     private int executeConfirmReport(@NotNull CommandSource source, @NotNull String player, @NotNull String reportReason) {
         new Thread(() -> {
-            Optional<PlayerData> opt = DataProvider.getPlayerDataByName(plugin.getDatabaseManager(), player);
-            if (opt.isEmpty()) {
-                sendMessageMissingPlayer(source, player);
-                return;
-            }
-            PlayerData data = opt.get();
+            PlayerData data = getPlayerDataNoSelf(source, player);
+            if (data == null) return;
             List<ReportData> reports = DataProvider.getActiveReportsFor(plugin.getDatabaseManager(), data.uuid());
-            if (reports.stream().anyMatch(r -> r.createdAt() + 1000 * 60 * 5 > System.currentTimeMillis())) {
-                // this player has been reported in the last 5 minutes (for any reason)
-                source.sendMessage(Messages.getFormattedComponent(source, "command.report.already_reported").color(NamedTextColor.RED));
-                return;
-            }
-            String reasonKey = findReasonKey(reportReason);
-            if (reasonKey != null && reports.stream().anyMatch(r -> reasonKey.equals(r.reason()) || reasonKey.equals(findReasonKey(r.reason())))) {
-                // same report exists
-                source.sendMessage(Messages.getFormattedComponent(source, "command.report.already_reported").color(NamedTextColor.RED));
-                return;
-            }
+            if (checkDuplicateReports(reports, source, reportReason)) return;
             source.sendMessage(Component.empty());
             source.sendMessage(Messages.getFormattedComponent(source, "command.report.no_reason.entry.filled_circle", reportReason).color(NamedTextColor.GREEN));
             Messages.sendFormatted(source, "command.report.confirm_report", data.name());
@@ -187,27 +179,12 @@ public class ReportCommand extends AbstractCommand {
             return executeConfirmReport(source, player, reason.substring("confirm:".length()));
         }
         new Thread(() -> {
-            // get player
-            Optional<PlayerData> opt = DataProvider.getPlayerDataByName(plugin.getDatabaseManager(), player);
-            if (opt.isEmpty()) {
-                sendMessageMissingPlayer(source, player);
-                return;
-            }
-            PlayerData data = opt.get();
+            PlayerData data = getPlayerDataNoSelf(source, player);
+            if (data == null) return;
 
             // check for duplicate reports
             List<ReportData> reports = DataProvider.getActiveReportsFor(plugin.getDatabaseManager(), data.uuid());
-            if (reports.stream().anyMatch(r -> r.createdAt() + 1000 * 60 * 3 > System.currentTimeMillis())) {
-                // this player has been reported in the last 3 minutes (for any reason)
-                source.sendMessage(Messages.getFormattedComponent(source, "command.report.already_reported").color(NamedTextColor.RED));
-                return;
-            }
-            String reasonKey = findReasonKey(reason);
-            if (reasonKey != null && reports.stream().anyMatch(r -> reasonKey.equals(r.reason()) || reasonKey.equals(findReasonKey(r.reason())))) {
-                // same report exists
-                source.sendMessage(Messages.getFormattedComponent(source, "command.report.already_reported").color(NamedTextColor.RED));
-                return;
-            }
+            if (checkDuplicateReports(reports, source, reason)) return;
 
             // collect information
             String senderName;
@@ -270,10 +247,12 @@ public class ReportCommand extends AbstractCommand {
             field4.add("value", new JsonPrimitive(reason));
             JsonObject field5 = new JsonObject();
             field5.add("name", new JsonPrimitive("通報の種類"));
-            field5.add("value", new JsonPrimitive(reasonKey == null ? "?" : reasonKey));
+            field5.add("value", new JsonPrimitive(findReasonKey(reason) == null ? "?" : Objects.requireNonNull(findReasonKey(reason))));
+            fields.add(field1);
             fields.add(field2);
-            fields.add(field2);
+            fields.add(field3);
             fields.add(field4);
+            fields.add(field5);
             embed.add("fields", fields);
             embeds.add(embed);
             o.add("embeds", embeds);
@@ -295,6 +274,35 @@ public class ReportCommand extends AbstractCommand {
             Messages.sendFormatted(source, "command.report.reported", data.name(), reason);
         }).start();
         return 0;
+    }
+
+    private boolean checkDuplicateReports(@NotNull List<ReportData> reports, @NotNull CommandSource source, @NotNull String reason) {
+        if (reports.stream().anyMatch(r -> r.createdAt() + 1000 * 60 * 5 > System.currentTimeMillis())) {
+            // this player has been reported in the last 5 minutes (for any reason)
+            source.sendMessage(Messages.getFormattedComponent(source, "command.report.reported_recently").color(NamedTextColor.RED));
+            return true;
+        }
+        String reasonKey = findReasonKey(reason);
+        if (reasonKey != null && reports.stream().anyMatch(r -> reasonKey.equals(r.reason()) || reasonKey.equals(findReasonKey(r.reason())))) {
+            // same report exists
+            source.sendMessage(Messages.getFormattedComponent(source, "command.report.already_reported").color(NamedTextColor.RED));
+            return true;
+        }
+        return false;
+    }
+
+    private @Nullable PlayerData getPlayerDataNoSelf(@NotNull CommandSource source, @NotNull String playerName) {
+        Optional<PlayerData> opt = DataProvider.getPlayerDataByName(plugin.getDatabaseManager(), playerName);
+        if (opt.isEmpty()) {
+            sendMessageMissingPlayer(source, playerName);
+            return null;
+        }
+        PlayerData data = opt.get();
+        if (source instanceof Player p && data.name().equalsIgnoreCase(p.getUsername())) {
+            Messages.sendFormatted(source, "command.report.self");
+            return null;
+        }
+        return data;
     }
 
     public static void executeWebhook(@NotNull String uri, @NotNull JsonObject json, @NotNull FileData @NotNull ... files) {
@@ -325,21 +333,6 @@ public class ReportCommand extends AbstractCommand {
                 throw new RuntimeException(e);
             }
         }).schedule();
-    }
-
-    @Override
-    public @NotNull LiteralArgumentBuilder<CommandSource> createBuilder() {
-        return literal("report")
-                .requires(sender -> sender.hasPermission("azisabareport.command.report"))
-                .then(argument("player", StringArgumentType.word())
-                        .executes(ctx -> executeNoReason(ctx.getSource(), StringArgumentType.getString(ctx, "player")))
-                        .then(argument("reason", StringArgumentType.greedyString())
-                                .suggests((context, builder) -> suggest(getReasons(context.getSource()), builder))
-                                .executes(ctx ->
-                                        execute(ctx.getSource(), StringArgumentType.getString(ctx, "player"), StringArgumentType.getString(ctx, "reason"))
-                                )
-                        )
-                );
     }
 
     @SafeVarargs
