@@ -1,9 +1,0 @@
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    //noinspection GradlePackageUpdate // 5.x requires Java 11+
-    api 'com.zaxxer:HikariCP:4.0.3'
-    compileOnlyApi 'org.jetbrains:annotations:23.0.0'
-}

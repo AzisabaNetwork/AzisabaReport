@@ -4,8 +4,32 @@
 #  | GitHub : https://github.com/AzisabaNetwork/AzisabaReport |
 #  +----------------------------------------------------------+
 
-ReportURL:
-ReportBugURL:
+report-url: http://0.0.0.0
+report-bug-url: http://0.0.0.0
+report-mention: ""
+report-bug-mention: ""
 
-ReportMention:
-ReportBugMention:
+database:
+  # (scheme)://(host):(port)/(database)
+  # Keep the line commented out unless you get an obvious error message indicating that the driver was not found.
+  # Default driver (net.azisaba.azisabaachievements.libs.org.mariadb.jdbc.Driver) points to the bundled MariaDB driver in the AzisabaAchievements jar.
+  #driver: net.azisaba.azisabaachievements.libs.org.mariadb.jdbc.Driver
+
+  # change to jdbc:mysql if you want to use MySQL instead of MariaDB
+  scheme: jdbc:mariadb
+  hostname: localhost
+  port: 3306
+  name: azisabareport
+  username: azisabareport
+  password: azisabareport
+  properties:
+    useSSL: true
+    verifyServerCertificate: true
+    prepStmtCacheSize: 250
+    prepStmtCacheSqlLimit: 2048
+    cachePrepStmts: true
+    useServerPrepStmts: true # use server-side prepared statements for performance boost
+    socketTimeout: 30000 # milliseconds
+    useLocalSessionState: true
+    rewriteBatchedStatements: true
+    maintainTimeStats: false

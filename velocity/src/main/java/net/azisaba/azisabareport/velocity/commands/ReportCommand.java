@@ -1,148 +1,374 @@
 package net.azisaba.azisabareport.velocity.commands;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.velocitypowered.api.command.CommandSource;
-import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
+import net.azisaba.azisabareport.common.message.ChatMessage;
 import net.azisaba.azisabareport.velocity.AzisabaReport;
-import net.azisaba.azisabareport.velocity.ConfigManager;
+import net.azisaba.azisabareport.velocity.data.FileData;
+import net.azisaba.azisabareport.velocity.data.PlayerData;
+import net.azisaba.azisabareport.velocity.data.ReportData;
+import net.azisaba.azisabareport.velocity.message.Messages;
+import net.azisaba.azisabareport.velocity.sql.DataProvider;
 import net.azisaba.azisabareport.velocity.util.RomajiTextReader;
-import net.azisaba.velocityredisbridge.VelocityRedisBridge;
-import net.azisaba.velocityredisbridge.util.PlayerInfo;
 import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.apache.http.HttpEntity;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.ByteArrayBody;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.UnmodifiableView;
 
-import javax.net.ssl.HttpsURLConnection;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.net.URL;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 // /report
-public class ReportCommand implements SimpleCommand {
-    @Override
-    public void execute(Invocation invocation) {
-        CommandSource sender = invocation.source();
-        String[] args = invocation.arguments();
-        if (ConfigManager.getReportURL() == null) {
-            sender.sendMessage(Component.text("エラーが発生しました。運営にこのエラー文のスクショと共に報告してください。[No valid ReportURL]", NamedTextColor.RED));
-            return;
-        }
-        if (!(sender instanceof Player)) {
-            // senderがプレイヤーじゃなかったら
-            sender.sendMessage(Component.text("プレイヤー以外は実行できません。", NamedTextColor.RED));
-            return;
-        }
-        if (args.length <= 1) {
-            sender.sendMessage(Component.text("/report mcid <証拠> <理由> と記入してください。", NamedTextColor.RED));
-            sender.sendMessage(Component.text("証拠を含めることができない場合は公式Discord #サポート受付 で通報をしてください。"));
-            return;
-        }
-        PlayerInfo player = null;
-        for (PlayerInfo playerInfo : VelocityRedisBridge.getApi().getAllPlayerInfo()) {
-            if (playerInfo.getUsername().equalsIgnoreCase(args[0])) {
-                player = playerInfo;
-                break;
-            }
-        }
-        if (player == null) {
-            sender.sendMessage(Component.text("入力されたプレイヤーが存在しません。", NamedTextColor.RED));
-            return;
-        }
-        String message = String.join(" ", dropFirst(args));
-        if (!message.contains("https://")) {
-            sender.sendMessage(Component.text("内容にURLを含めてください。", NamedTextColor.RED));
-            return;
-        }
-        sender.sendMessage(Component.text("送信されました。", NamedTextColor.GREEN));
-        JsonObject o = new JsonObject();
-        o.add("username", new JsonPrimitive(((Player) sender).getUsername()));
-        o.add("avatar_url", new JsonPrimitive("https://crafatar.com/avatars/" + ((Player) sender).getUniqueId()));
-        o.add("content", new JsonPrimitive(ConfigManager.getReportMention()));
-        JsonArray embeds = new JsonArray();
-        JsonObject embed = new JsonObject();
-        embed.add("title", new JsonPrimitive("鯖名"));
-        embed.add("color", new JsonPrimitive(16711680));
-        embed.add("description", new JsonPrimitive(((Player) sender).getCurrentServer().orElseThrow(IllegalStateException::new).getServerInfo().getName()));
-        JsonObject author = new JsonObject();
-        author.add("name", new JsonPrimitive(((Player) sender).getUsername()));
-        embed.add("author", author);
-        JsonArray fields = new JsonArray();
-        JsonObject field1 = new JsonObject();
-        field1.add("name", new JsonPrimitive("対象者"));
-        field1.add("value", new JsonPrimitive(player.getUsername()));
-        JsonObject field2 = new JsonObject();
-        field2.add("name", new JsonPrimitive("理由/証拠"));
-        field2.add("value", new JsonPrimitive(RomajiTextReader.convert(message)));
-        JsonObject field3 = new JsonObject();
-        field3.add("name", new JsonPrimitive("処理前の内容"));
-        field3.add("value", new JsonPrimitive(message));
-        JsonObject field4 = new JsonObject();
-        field4.add("name", new JsonPrimitive("UUID"));
-        field4.add("value", new JsonPrimitive(player.getUuid().toString()));
-        fields.add(field1);
-        fields.add(field2);
-        fields.add(field3);
-        fields.add(field4);
-        embed.add("fields", fields);
-        embeds.add(embed);
-        o.add("embeds", embeds);
-        requestWebHook(o.toString(), ConfigManager.getReportURL());
+public class ReportCommand extends AbstractCommand {
+    private static final List<String> CHAT_REASON_KEYS = Arrays.asList("spam", "inappropriate-chat", "inappropriate-player-name");
+    private static final List<String> IN_GAME_REASON_KEYS = Arrays.asList("cheating", "teaming");
+    private static final List<String> REASON_KEYS = concatList(CHAT_REASON_KEYS, IN_GAME_REASON_KEYS);
+
+    private final AzisabaReport plugin;
+
+    public ReportCommand(@NotNull AzisabaReport plugin) {
+        this.plugin = plugin;
     }
 
-    public static void requestWebHook(final String json, final URL url) {
-        AzisabaReport.getInstance().getServer().getScheduler().buildTask(AzisabaReport.getInstance(), () -> {
+    private static @NotNull Set<@NotNull String> getReasonsInAllLocales(@NotNull Stream<String> keyStream) {
+        return keyStream
+                .map(key -> "command.report.reason." + key)
+                .flatMap(key -> Messages.getLocales().values().stream().map(mi -> mi.get(key)))
+                .collect(Collectors.toSet());
+    }
+
+    private static @NotNull Set<@NotNull String> getFromAllLocales(@NotNull String reasonKey) {
+        return Messages.getLocales().values().stream().map(mi -> mi.get(reasonKey)).collect(Collectors.toSet());
+    }
+
+    private static @Nullable String findReasonKey(@NotNull String reason) {
+        return REASON_KEYS.stream()
+                .filter(key -> getFromAllLocales("command.report.reason." + key).stream().anyMatch(r -> r.equals(reason)))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static Stream<String> getReasons(@NotNull CommandSource source) {
+        return REASON_KEYS.stream().map(key -> "command.report.reason." + key).map(key -> Messages.getRawMessage(source, key));
+    }
+
+    private int executeNoReason(@NotNull CommandSource source, @NotNull String player) {
+        new Thread(() -> {
+            Optional<PlayerData> opt = DataProvider.getPlayerDataByName(plugin.getDatabaseManager(), player);
+            if (opt.isEmpty()) {
+                sendMessageMissingPlayer(source, player);
+                return;
+            }
+            PlayerData data = opt.get();
+            List<ReportData> reports = DataProvider.getReportsFor(plugin.getDatabaseManager(), data.uuid());
+            List<ReportData> validReports =
+                    reports.stream()
+                            .filter(r -> r.createdAt() + 1000 * 60 * 60 * 24 > System.currentTimeMillis()) // created in 24 hours
+                            .filter(r -> !r.flags().contains(ReportData.CLOSED)) // not closed
+                            .toList();
+            Messages.sendFormatted(source, "command.report.no_reason.header", data.name());
+            boolean alreadyReportedChat = CHAT_REASON_KEYS.stream().anyMatch(key -> validReports.stream().anyMatch(r -> key.equals(findReasonKey(r.reason()))));
+            for (String key : REASON_KEYS) {
+                String reason = Messages.getRawMessage(source, "command.report.reason." + key);
+                Component component = Messages.getFormattedComponent(source, "command.report.no_reason.entry.circle", reason);
+                if (validReports.stream().anyMatch(r -> key.equals(findReasonKey(r.reason()))) || (alreadyReportedChat && CHAT_REASON_KEYS.contains(key))) {
+                    // active report exists
+                    component = component.color(NamedTextColor.DARK_GRAY);
+                    component = component.hoverEvent(HoverEvent.showText(Messages.getFormattedComponent(source, "command.report.already_reported")));
+                } else {
+                    // no active report
+                    component = component.hoverEvent(HoverEvent.showText(Messages.getFormattedComponent(source, "command.report.click_to_report", reason)));
+                    component = component.clickEvent(ClickEvent.runCommand("/report " + data.name() + " confirm:" + reason));
+                }
+                source.sendMessage(component);
+            }
+        }).start();
+        return 0;
+    }
+
+    private int executeConfirmReport(@NotNull CommandSource source, @NotNull String player, @NotNull String reportReason) {
+        new Thread(() -> {
+            Optional<PlayerData> opt = DataProvider.getPlayerDataByName(plugin.getDatabaseManager(), player);
+            if (opt.isEmpty()) {
+                sendMessageMissingPlayer(source, player);
+                return;
+            }
+            PlayerData data = opt.get();
+            List<ReportData> reports = DataProvider.getActiveReportsFor(plugin.getDatabaseManager(), data.uuid());
+            if (reports.stream().anyMatch(r -> r.createdAt() + 1000 * 60 * 5 > System.currentTimeMillis())) {
+                // this player has been reported in the last 5 minutes (for any reason)
+                source.sendMessage(Messages.getFormattedComponent(source, "command.report.already_reported").color(NamedTextColor.RED));
+                return;
+            }
+            String reasonKey = findReasonKey(reportReason);
+            if (reasonKey != null && reports.stream().anyMatch(r -> reasonKey.equals(r.reason()) || reasonKey.equals(findReasonKey(r.reason())))) {
+                // same report exists
+                source.sendMessage(Messages.getFormattedComponent(source, "command.report.already_reported").color(NamedTextColor.RED));
+                return;
+            }
+            source.sendMessage(Component.empty());
+            source.sendMessage(Messages.getFormattedComponent(source, "command.report.no_reason.entry.filled_circle", reportReason).color(NamedTextColor.GREEN));
+            Messages.sendFormatted(source, "command.report.confirm_report", data.name());
+            Component component = Component.text("[");
+            component = component.append(Messages.getFormattedComponent(source, "generic.send").color(NamedTextColor.GREEN));
+            component = component.append(Component.text("]"));
+            component = component.hoverEvent(HoverEvent.showText(Messages.getFormattedComponent(source, "command.report.click_to_report", reportReason)));
+            component = component.clickEvent(ClickEvent.runCommand("/report " + data.name() + " " + reportReason));
+            source.sendMessage(component);
+            source.sendMessage(Component.empty());
+        }).start();
+        return 0;
+    }
+
+    private void handleChatReport(@NotNull PlayerData player, @NotNull JsonObject payload) {
+        List<ChatMessage> messages =
+                DataProvider.getRecentMessagesBy(plugin.getDatabaseManager(), player.uuid())
+                        .stream()
+                        .sorted((a, b) -> (int) (b.getTimestamp() - a.getTimestamp()))
+                        .toList();
+        // add files if necessary
+        FileData textFile;
+        FileData jsonFile;
+        if (messages.isEmpty()) {
+            textFile = null;
+            jsonFile = null;
+        } else {
+            String text = messages.stream().map(ChatMessage::toString).collect(Collectors.joining("\n"));
+            JsonArray array = new JsonArray(messages.size());
+            for (ChatMessage message : messages) {
+                array.add(toJson(message));
+            }
+            textFile = new FileData("chat.txt", ContentType.TEXT_PLAIN.withCharset(StandardCharsets.UTF_8), text.getBytes(StandardCharsets.UTF_8));
+            jsonFile = new FileData("chat.json", ContentType.APPLICATION_JSON, array.toString().getBytes(StandardCharsets.UTF_8));
+        }
+
+        // execute webhook
+        if (textFile != null) {
+            executeWebhook(plugin.getConfig().reportURL.toString(), payload, textFile, jsonFile);
+        } else {
+            executeWebhook(plugin.getConfig().reportURL.toString(), payload);
+        }
+    }
+
+    private int execute(@NotNull CommandSource source, @NotNull String player, @NotNull String reason) {
+        if (reason.startsWith("confirm:")) {
+            return executeConfirmReport(source, player, reason.substring("confirm:".length()));
+        }
+        new Thread(() -> {
+            // get player
+            Optional<PlayerData> opt = DataProvider.getPlayerDataByName(plugin.getDatabaseManager(), player);
+            if (opt.isEmpty()) {
+                sendMessageMissingPlayer(source, player);
+                return;
+            }
+            PlayerData data = opt.get();
+
+            // check for duplicate reports
+            List<ReportData> reports = DataProvider.getActiveReportsFor(plugin.getDatabaseManager(), data.uuid());
+            if (reports.stream().anyMatch(r -> r.createdAt() + 1000 * 60 * 3 > System.currentTimeMillis())) {
+                // this player has been reported in the last 3 minutes (for any reason)
+                source.sendMessage(Messages.getFormattedComponent(source, "command.report.already_reported").color(NamedTextColor.RED));
+                return;
+            }
+            String reasonKey = findReasonKey(reason);
+            if (reasonKey != null && reports.stream().anyMatch(r -> reasonKey.equals(r.reason()) || reasonKey.equals(findReasonKey(r.reason())))) {
+                // same report exists
+                source.sendMessage(Messages.getFormattedComponent(source, "command.report.already_reported").color(NamedTextColor.RED));
+                return;
+            }
+
+            // collect information
+            String senderName;
+            UUID senderUUID;
+            String senderServerName;
+            if (source instanceof Player) {
+                senderName = ((Player) source).getUsername();
+                senderUUID = ((Player) source).getUniqueId();
+                senderServerName = ((Player) source).getCurrentServer().orElseThrow(IllegalStateException::new).getServerInfo().getName();
+            } else {
+                senderName = "CONSOLE";
+                senderUUID = null;
+                senderServerName = "null";
+            }
+
+            long reportId;
             try {
-                final HttpsURLConnection con = (HttpsURLConnection) url.openConnection();
-                con.addRequestProperty("Content-Type", "application/json; charset=utf-8");
-                con.addRequestProperty("User-Agent", "AzisabaReport/1.1");
-                con.setDoOutput(true);
-                con.setRequestMethod("POST");
-                con.setRequestProperty("Content-Length", String.valueOf(json.length()));
-                final OutputStream stream = con.getOutputStream();
-                stream.write(json.getBytes(StandardCharsets.UTF_8));
-                stream.flush();
-                stream.close();
-                con.disconnect();
-                con.getResponseCode();
+                reportId = plugin.getDatabaseManager().query("INSERT INTO `reports` (`reporter_id`, `reported_id`, `reason`) VALUES (?, ?, ?)", ps -> {
+                    ps.setString(1, (senderUUID == null ? new UUID(0, 0) : senderUUID).toString());
+                    ps.setString(2, data.uuid().toString());
+                    ps.setString(3, reason);
+                    ps.executeUpdate();
+                    try (ResultSet generatedKeys = ps.getGeneratedKeys()) {
+                        if (generatedKeys.next()) {
+                            return generatedKeys.getLong(1);
+                        } else {
+                            throw new RuntimeException("Failed to insert report");
+                        }
+                    }
+                });
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+
+            // prepare report json
+            JsonObject o = new JsonObject();
+            o.add("username", new JsonPrimitive(senderName));
+            o.add("avatar_url", new JsonPrimitive("https://crafatar.com/avatars/" + senderUUID));
+            o.add("content", new JsonPrimitive(plugin.getConfig().reportMention));
+            JsonArray embeds = new JsonArray();
+            JsonObject embed = new JsonObject();
+            embed.add("title", new JsonPrimitive("レポート#ID"));
+            embed.add("color", new JsonPrimitive(16711680));
+            embed.add("description", new JsonPrimitive("#" + reportId));
+            JsonObject author = new JsonObject();
+            author.add("name", new JsonPrimitive(senderName));
+            embed.add("author", author);
+            JsonArray fields = new JsonArray();
+            JsonObject field1 = new JsonObject();
+            field1.add("name", new JsonPrimitive("鯖名"));
+            field1.add("value", new JsonPrimitive("`" + senderServerName + "`"));
+            JsonObject field2 = new JsonObject();
+            field2.add("name", new JsonPrimitive("対象者"));
+            field2.add("value", new JsonPrimitive("`" + data.name() + "` (`" + data.uuid() + "`)"));
+            JsonObject field3 = new JsonObject();
+            field3.add("name", new JsonPrimitive("理由/証拠"));
+            field3.add("value", new JsonPrimitive(RomajiTextReader.convert(reason)));
+            JsonObject field4 = new JsonObject();
+            field4.add("name", new JsonPrimitive("処理前の内容"));
+            field4.add("value", new JsonPrimitive(reason));
+            JsonObject field5 = new JsonObject();
+            field5.add("name", new JsonPrimitive("通報の種類"));
+            field5.add("value", new JsonPrimitive(reasonKey == null ? "?" : reasonKey));
+            fields.add(field2);
+            fields.add(field2);
+            fields.add(field4);
+            embed.add("fields", fields);
+            embeds.add(embed);
+            o.add("embeds", embeds);
+
+            // handle report
+            if (getReasonsInAllLocales(CHAT_REASON_KEYS.stream()).contains(reason) || CHAT_REASON_KEYS.contains(reason.toLowerCase(Locale.ROOT))) {
+                // chat reports
+
+                // handle in separate method
+                handleChatReport(data, o);
+            } else {
+                // other reports
+
+                // execute webhook
+                executeWebhook(plugin.getConfig().reportURL.toString(), o);
+            }
+
+            // send feedback
+            Messages.sendFormatted(source, "command.report.reported", data.name(), reason);
+        }).start();
+        return 0;
+    }
+
+    public static void executeWebhook(@NotNull String uri, @NotNull JsonObject json, @NotNull FileData @NotNull ... files) {
+        AzisabaReport.getInstance().getServer().getScheduler().buildTask(AzisabaReport.getInstance(), () -> {
+            HttpPost execute = new HttpPost(uri);
+            MultipartEntityBuilder builder = MultipartEntityBuilder.create();
+            for (int i = 0; i < files.length; i++) {
+                builder.addPart("files[" + i + "]", new ByteArrayBody(files[i].data(), files[i].contentType(), files[i].name()));
+            }
+            builder.addTextBody("payload_json", json.toString(), ContentType.APPLICATION_JSON);
+            HttpEntity multipart = builder.build();
+            execute.setEntity(multipart);
+            execute.addHeader("User-Agent", "AzisabaReport/2.x");
+            try (CloseableHttpClient httpClient = HttpClients.createDefault();
+                 CloseableHttpResponse response = httpClient.execute(execute)) {
+                if (response.getStatusLine().getStatusCode() < 200 || response.getStatusLine().getStatusCode() >= 300) {
+                    AzisabaReport.getInstance().getLogger().error("Unexpected response code: " + response.getStatusLine().getStatusCode());
+                    StringBuilder sb = new StringBuilder();
+                    try (BufferedReader reader = new BufferedReader(new InputStreamReader(response.getEntity().getContent()))) {
+                        String read;
+                        while ((read = reader.readLine()) != null) {
+                            sb.append(read);
+                        }
+                    }
+                    AzisabaReport.getInstance().getLogger().error("Response body: " + sb);
+                }
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         }).schedule();
     }
 
-    private static String[] dropFirst(String[] array) {
-        if (array.length == 0) throw new IllegalArgumentException("length == 0");
-        if (array.length == 1) return new String[0];
-        List<String> list = new ArrayList<>(Arrays.asList(array));
-        list.remove(0);
-        return list.toArray(new String[0]);
+    @Override
+    public @NotNull LiteralArgumentBuilder<CommandSource> createBuilder() {
+        return literal("report")
+                .requires(sender -> sender.hasPermission("azisabareport.command.report"))
+                .then(argument("player", StringArgumentType.word())
+                        .executes(ctx -> executeNoReason(ctx.getSource(), StringArgumentType.getString(ctx, "player")))
+                        .then(argument("reason", StringArgumentType.greedyString())
+                                .suggests((context, builder) -> suggest(getReasons(context.getSource()), builder))
+                                .executes(ctx ->
+                                        execute(ctx.getSource(), StringArgumentType.getString(ctx, "player"), StringArgumentType.getString(ctx, "reason"))
+                                )
+                        )
+                );
     }
 
-    @Override
-    public List<String> suggest(Invocation invocation) {
-        CommandSource sender = invocation.source();
-        String[] args = invocation.arguments();
-        if (!(sender instanceof Player)) return null;
-        String lastArg = "";
-        if (args.length != 0) {
-            lastArg = args[args.length - 1].toLowerCase();
+    @SafeVarargs
+    private static <T> @UnmodifiableView @NotNull List<T> concatList(@NotNull List<T> @NotNull ... lists) {
+        List<T> list = new ArrayList<>();
+        for (List<T> l : lists) {
+            list.addAll(l);
         }
-        if (args.length <= 1) {
-            final List<String> players = new ArrayList<>();
-            for (final Player player : ((Player) sender).getCurrentServer().orElseThrow(IllegalStateException::new).getServer().getPlayersConnected()) {
-                if (player.getUsername().toLowerCase().startsWith(lastArg)) {
-                    players.add(player.getUsername());
-                }
-            }
-            return players;
+        return Collections.unmodifiableList(list);
+    }
+
+    private static @NotNull JsonObject toJson(@NotNull ChatMessage message) {
+        JsonObject o = new JsonObject();
+        o.add("type", new JsonPrimitive(message.getType().name()));
+        o.add("uuid", new JsonPrimitive(message.getUniqueId().toString()));
+        o.add("username", new JsonPrimitive(message.getUsername()));
+        if (message.getDisplayName() == null) {
+            o.add("display_name", JsonNull.INSTANCE);
+        } else {
+            o.add("display_name", new JsonPrimitive(message.getDisplayName()));
         }
-        return Collections.singletonList("理由/証拠");
+        if (message.getChannelName() == null) {
+            o.add("channel_name", JsonNull.INSTANCE);
+        } else {
+            o.add("channel_name", new JsonPrimitive(message.getChannelName()));
+        }
+        o.add("message", new JsonPrimitive(message.getMessage()));
+        o.add("timestamp", new JsonPrimitive(message.getTimestamp()));
+        o.add("server", new JsonPrimitive(Objects.requireNonNull(message.getServer())));
+        return o;
     }
 }

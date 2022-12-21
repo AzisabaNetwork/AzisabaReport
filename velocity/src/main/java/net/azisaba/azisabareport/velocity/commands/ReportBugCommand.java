@@ -1,29 +1,32 @@
 package net.azisaba.azisabareport.velocity.commands;
 
-import net.azisaba.azisabareport.velocity.ConfigManager;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.command.SimpleCommand;
 import com.velocitypowered.api.proxy.Player;
+import net.azisaba.azisabareport.velocity.AzisabaReport;
 import net.azisaba.azisabareport.velocity.util.RomajiTextReader;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.List;
 
 // /reportbug
 public class ReportBugCommand implements SimpleCommand {
+    private final AzisabaReport plugin;
+
+    public ReportBugCommand(@NotNull AzisabaReport plugin) {
+        this.plugin = plugin;
+    }
+
     @Override
     public void execute(Invocation invocation) {
         CommandSource sender = invocation.source();
         String[] args = invocation.arguments();
-        if (ConfigManager.getReportBugURL() == null) {
-            sender.sendMessage(Component.text("エラーが発生しました。運営にこのエラー文のスクショと共に報告してください。[No valid ReportBugURL]", NamedTextColor.RED));
-            return;
-        }
         if (!(sender instanceof Player)) {
             // senderがプレイヤーじゃなかったら
             sender.sendMessage(Component.text("プレイヤー以外は実行できません。", NamedTextColor.RED));
@@ -38,7 +41,7 @@ public class ReportBugCommand implements SimpleCommand {
         JsonObject o = new JsonObject();
         o.add("username", new JsonPrimitive(((Player) sender).getUsername()));
         o.add("avatar_url", new JsonPrimitive("https://crafatar.com/avatars/" + ((Player) sender).getUniqueId()));
-        o.add("content", new JsonPrimitive(ConfigManager.getReportBugMention()));
+        o.add("content", new JsonPrimitive(plugin.getConfig().reportBugMention));
         JsonArray embeds = new JsonArray();
         JsonObject embed = new JsonObject();
         embed.add("title", new JsonPrimitive("鯖名"));
@@ -63,7 +66,7 @@ public class ReportBugCommand implements SimpleCommand {
         embed.add("fields", fields);
         embeds.add(embed);
         o.add("embeds", embeds);
-        ReportCommand.requestWebHook(o.toString(), ConfigManager.getReportBugURL());
+        ReportCommand.executeWebhook(plugin.getConfig().reportBugURL.toString(), o);
     }
 
     @Override
