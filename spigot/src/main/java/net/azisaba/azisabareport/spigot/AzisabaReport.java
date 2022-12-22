@@ -6,6 +6,7 @@ import net.azisaba.azisabareport.spigot.listener.BukkitChatListener;
 import net.azisaba.azisabareport.spigot.listener.LunaChatListener;
 import net.azisaba.azisabareport.spigot.listener.RyuZUPluginChatListener;
 import net.azisaba.azisabareport.spigot.message.ChatMessageHandler;
+import net.azisaba.azisabareport.spigot.tasks.SendPlayerPosTask;
 import org.bukkit.Bukkit;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -14,6 +15,8 @@ import org.jetbrains.annotations.NotNull;
 public class AzisabaReport extends JavaPlugin {
     public static final String LEGACY_CHANNEL_CHAT = "AZIREPORT";
     public static final String CHANNEL_CHAT = "azisabareport:chat";
+    public static final String LEGACY_CHANNEL_PLAYER_POS = "AZIREPORT_PP";
+    public static final String CHANNEL_PLAYER_POS = "azisabareport:pp";
     public static boolean isLegacy = false;
     private final ChatMessageHandler chatMessageHandler = new ChatMessageHandler(this);
 
@@ -21,11 +24,14 @@ public class AzisabaReport extends JavaPlugin {
     public void onEnable() {
         try {
             Bukkit.getMessenger().registerOutgoingPluginChannel(this, CHANNEL_CHAT);
+            Bukkit.getMessenger().registerOutgoingPluginChannel(this, CHANNEL_PLAYER_POS);
         } catch (RuntimeException e) {
             isLegacy = true;
             Bukkit.getMessenger().registerOutgoingPluginChannel(this, LEGACY_CHANNEL_CHAT);
+            Bukkit.getMessenger().registerOutgoingPluginChannel(this, LEGACY_CHANNEL_PLAYER_POS);
         }
         setupChatListener();
+        new SendPlayerPosTask(this).runTaskTimerAsynchronously(this, 20, 20);
     }
 
     private void setupChatListener() {

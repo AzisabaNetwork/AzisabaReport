@@ -1,5 +1,6 @@
 package net.azisaba.azisabareport.velocity;
 
+import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.proxy.messages.LegacyChannelIdentifier;
 import com.velocitypowered.api.proxy.messages.MinecraftChannelIdentifier;
 import net.azisaba.azisabareport.velocity.commands.ReportCommand;
@@ -14,10 +15,13 @@ import net.azisaba.azisabareport.velocity.commands.ReportBugCommand;
 import net.azisaba.azisabareport.velocity.listener.PlayerListener;
 import net.azisaba.azisabareport.velocity.listener.PluginMessageListener;
 import net.azisaba.azisabareport.velocity.message.Messages;
+import net.azisaba.azisabareport.velocity.redis.JedisBox;
 import net.azisaba.azisabareport.velocity.sql.DatabaseManager;
 import net.azisaba.azisabareport.velocity.tasks.CheckClosedReportTask;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.params.SetParams;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -32,6 +36,7 @@ public class AzisabaReport {
     private final Path dataDirectory;
     private final PluginConfig config;
     private final DatabaseManager databaseManager;
+    private final JedisBox jedisBox;
 
     @Inject
     public AzisabaReport(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) throws IOException, SQLException {
@@ -40,6 +45,10 @@ public class AzisabaReport {
         this.dataDirectory = dataDirectory;
         this.config = new PluginConfig(this);
         this.databaseManager = new DatabaseManager(this.logger, config.databaseConfig.createDataSource());
+        this.jedisBox = new JedisBox(config.redisHost, config.redisPort, config.redisUsername, config.redisPassword);
+        try (Jedis jedis = jedisBox.getJedisPool().getResource()) {
+            jedis.set("azisaba_report:test", "true", SetParams.setParams().ex(1));
+        }
         plugin = this;
         Messages.load();
     }
@@ -53,12 +62,19 @@ public class AzisabaReport {
         server.getEventManager().register(this, new PluginMessageListener(this));
         server.getChannelRegistrar().register(
                 new LegacyChannelIdentifier("AZIREPORT"),
-                MinecraftChannelIdentifier.create("azisabareport", "chat"));
+                MinecraftChannelIdentifier.create("azisabareport", "chat"),
+                new LegacyChannelIdentifier("AZIREPORT_PP"),
+                MinecraftChannelIdentifier.create("azisabareport", "pp"));
         server.getScheduler()
                 .buildTask(this, new CheckClosedReportTask(this))
                 .delay(30, TimeUnit.SECONDS)
                 .repeat(1, TimeUnit.MINUTES)
                 .schedule();
+    }
+
+    @Subscribe
+    public void onProxyShutdown(ProxyShutdownEvent e) {
+        databaseManager.close();
     }
 
     public @NotNull ProxyServer getServer() {
@@ -79,6 +95,10 @@ public class AzisabaReport {
 
     public @NotNull DatabaseManager getDatabaseManager() {
         return databaseManager;
+    }
+
+    public @NotNull JedisBox getJedisBox() {
+        return jedisBox;
     }
 
     private static AzisabaReport plugin;

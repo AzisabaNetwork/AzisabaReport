@@ -1,7 +1,10 @@
 package net.azisaba.azisabareport.common.util;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.function.Consumer;
 
 public final class ByteBufUtil {
     private ByteBufUtil() { throw new AssertionError(); }
@@ -17,5 +20,17 @@ public final class ByteBufUtil {
         buf.getBytes(buf.readerIndex(), bytes);
         buf.release();
         return bytes;
+    }
+
+    public static byte @NotNull [] toByteArray(@NotNull Consumer<@NotNull ByteBuf> action) {
+        ByteBuf buf = Unpooled.buffer();
+        try {
+            action.accept(buf);
+            return toByteArray(buf);
+        } finally {
+            if (buf.refCnt() > 0) {
+                buf.release();
+            }
+        }
     }
 }

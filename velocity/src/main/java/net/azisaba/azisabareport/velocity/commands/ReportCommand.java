@@ -8,12 +8,16 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import net.azisaba.azisabareport.common.data.PlayerPosData;
 import net.azisaba.azisabareport.common.message.ChatMessage;
 import net.azisaba.azisabareport.velocity.AzisabaReport;
 import net.azisaba.azisabareport.velocity.data.FileData;
 import net.azisaba.azisabareport.velocity.data.PlayerData;
 import net.azisaba.azisabareport.velocity.data.ReportData;
 import net.azisaba.azisabareport.velocity.message.Messages;
+import net.azisaba.azisabareport.velocity.redis.RedisKeys;
 import net.azisaba.azisabareport.velocity.sql.DataProvider;
 import net.azisaba.azisabareport.velocity.util.RomajiTextReader;
 import net.kyori.adventure.text.Component;
@@ -31,6 +35,8 @@ import org.apache.http.impl.client.HttpClients;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
+import redis.clients.jedis.Jedis;
+import xyz.acrylicstyle.util.serialization.decoder.ByteBufValueDecoder;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -253,6 +259,24 @@ public class ReportCommand extends AbstractCommand {
             fields.add(field3);
             fields.add(field4);
             fields.add(field5);
+            try (Jedis jedis = plugin.getJedisBox().getJedisPool().getResource()) {
+                if (senderUUID != null) {
+                    PlayerPosData reporterPos = getPlayerPos(jedis, senderUUID);
+                    if (reporterPos != null) {
+                        JsonObject reporterPosField = new JsonObject();
+                        reporterPosField.add("name", new JsonPrimitive("通報者の座標"));
+                        reporterPosField.add("value", new JsonPrimitive(reporterPos.toPosString()));
+                        fields.add(reporterPosField);
+                    }
+                }
+                PlayerPosData reportedPos = getPlayerPos(jedis, data.uuid());
+                if (reportedPos != null) {
+                    JsonObject reportedPosField = new JsonObject();
+                    reportedPosField.add("name", new JsonPrimitive("対象者の座標"));
+                    reportedPosField.add("value", new JsonPrimitive(reportedPos.toPosString()));
+                    fields.add(reportedPosField);
+                }
+            }
             embed.add("fields", fields);
             embeds.add(embed);
             o.add("embeds", embeds);
@@ -378,5 +402,18 @@ public class ReportCommand extends AbstractCommand {
         o.add("timestamp", new JsonPrimitive(message.getTimestamp()));
         o.add("server", new JsonPrimitive(Objects.requireNonNull(message.getServer())));
         return o;
+    }
+
+    private static @Nullable PlayerPosData getPlayerPos(@NotNull Jedis jedis, @NotNull UUID uuid) {
+        byte[] byteData = jedis.get(RedisKeys.playerPos(uuid));
+        if (byteData == null || byteData.length == 0) {
+            return null;
+        }
+        ByteBuf buf = Unpooled.wrappedBuffer(byteData);
+        try {
+            return PlayerPosData.CODEC.decode(new ByteBufValueDecoder(buf));
+        } finally {
+            buf.release();
+        }
     }
 }

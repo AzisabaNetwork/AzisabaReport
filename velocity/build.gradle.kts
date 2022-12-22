@@ -12,6 +12,7 @@ dependencies {
     implementation("org.mariadb.jdbc:mariadb-java-client:3.1.0")
     implementation("org.apache.httpcomponents:httpclient:4.5.14")
     implementation("org.apache.httpcomponents:httpmime:4.5.14")
+    implementation("redis.clients:jedis:4.3.1")
     compileOnly("com.velocitypowered:velocity-api:3.1.0")
     annotationProcessor("com.velocitypowered:velocity-api:3.1.0")
 }
