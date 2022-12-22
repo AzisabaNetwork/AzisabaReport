@@ -105,11 +105,11 @@ public class ReportCommand extends AbstractCommand {
             if (data == null) return;
             List<ReportData> reports = DataProvider.getActiveReportsFor(plugin.getDatabaseManager(), data.uuid());
             Messages.sendFormatted(source, "command.report.no_reason.header", data.name());
-            boolean alreadyReportedChat = CHAT_REASON_KEYS.stream().anyMatch(key -> reports.stream().anyMatch(r -> key.equals(r.reason()) || key.equals(findReasonKey(r.reason()))));
             for (String key : REASON_KEYS) {
                 String reason = Messages.getRawMessage(source, "command.report.reason." + key);
+                boolean alreadyReported = checkDuplicateReports(reports, source, reason, false);
                 Component component = Messages.getFormattedComponent(source, "command.report.no_reason.entry.circle", reason);
-                if (reports.stream().anyMatch(r -> key.equals(r.reason()) || key.equals(findReasonKey(r.reason()))) || (alreadyReportedChat && CHAT_REASON_KEYS.contains(key))) {
+                if (alreadyReported) {
                     // active report exists
                     component = component.color(NamedTextColor.DARK_GRAY);
                     component = component.hoverEvent(HoverEvent.showText(Messages.getFormattedComponent(source, "command.report.already_reported")));
@@ -129,7 +129,7 @@ public class ReportCommand extends AbstractCommand {
             PlayerData data = getPlayerDataNoSelf(source, player);
             if (data == null) return;
             List<ReportData> reports = DataProvider.getActiveReportsFor(plugin.getDatabaseManager(), data.uuid());
-            if (checkDuplicateReports(reports, source, reportReason)) return;
+            if (checkDuplicateReports(reports, source, reportReason, true)) return;
             source.sendMessage(Component.empty());
             source.sendMessage(Messages.getFormattedComponent(source, "command.report.no_reason.entry.filled_circle", reportReason).color(NamedTextColor.GREEN));
             Messages.sendFormatted(source, "command.report.confirm_report", data.name());
@@ -184,7 +184,7 @@ public class ReportCommand extends AbstractCommand {
 
             // check for duplicate reports
             List<ReportData> reports = DataProvider.getActiveReportsFor(plugin.getDatabaseManager(), data.uuid());
-            if (checkDuplicateReports(reports, source, reason)) return;
+            if (checkDuplicateReports(reports, source, reason, true)) return;
 
             // collect information
             String senderName;
@@ -276,21 +276,32 @@ public class ReportCommand extends AbstractCommand {
         return 0;
     }
 
-    private boolean checkDuplicateReports(@NotNull List<ReportData> reports, @NotNull CommandSource source, @NotNull String reason) {
+    private boolean checkDuplicateReports(@NotNull List<ReportData> reports, @NotNull CommandSource source, @NotNull String reason, boolean sendMessage) {
         if (reports.stream().anyMatch(r -> r.createdAt() + 1000 * 60 * 5 > System.currentTimeMillis())) {
             // this player has been reported in the last 5 minutes (for any reason)
-            source.sendMessage(Messages.getFormattedComponent(source, "command.report.reported_recently").color(NamedTextColor.RED));
+            if (sendMessage) {
+                source.sendMessage(Messages.getFormattedComponent(source, "command.report.reported_recently").color(NamedTextColor.RED));
+            }
             return true;
         }
         if (reports.stream().anyMatch(r -> reason.equals(r.reason()))) {
-            source.sendMessage(Messages.getFormattedComponent(source, "command.report.already_reported").color(NamedTextColor.RED));
+            if (sendMessage) {
+                source.sendMessage(Messages.getFormattedComponent(source, "command.report.already_reported").color(NamedTextColor.RED));
+            }
             return true;
         }
         String reasonKey = findReasonKey(reason);
-        if (reasonKey != null && reports.stream().anyMatch(r -> reasonKey.equals(r.reason()) || reasonKey.equals(findReasonKey(r.reason())))) {
-            // same report exists
-            source.sendMessage(Messages.getFormattedComponent(source, "command.report.already_reported").color(NamedTextColor.RED));
-            return true;
+        if (reasonKey != null) {
+            boolean alreadyReportedChat = CHAT_REASON_KEYS.stream().anyMatch(key -> reports.stream().anyMatch(r -> key.equals(r.reason()) || key.equals(findReasonKey(r.reason()))));
+            if ((alreadyReportedChat && CHAT_REASON_KEYS.contains(reasonKey)) ||
+                    reports.stream().anyMatch(r -> reasonKey.equals(r.reason()) || reasonKey.equals(findReasonKey(r.reason())))
+            ) {
+                // same report exists
+                if (sendMessage) {
+                    source.sendMessage(Messages.getFormattedComponent(source, "command.report.already_reported").color(NamedTextColor.RED));
+                }
+                return true;
+            }
         }
         return false;
     }
