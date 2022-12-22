@@ -2,9 +2,9 @@ package net.azisaba.azisabareport.spigot.listener;
 
 import net.azisaba.azisabareport.common.message.ChatMessage;
 import net.azisaba.azisabareport.spigot.AzisabaReport;
-import net.azisaba.ryuzupluginchat.event.AsyncChannelMessageEvent;
-import net.azisaba.ryuzupluginchat.event.AsyncGlobalMessageEvent;
-import net.azisaba.ryuzupluginchat.event.AsyncPrivateMessageEvent;
+import net.azisaba.ryuzupluginchat.event.AsyncPublishChannelMessageEvent;
+import net.azisaba.ryuzupluginchat.event.AsyncPublishGlobalMessageEvent;
+import net.azisaba.ryuzupluginchat.event.AsyncPublishPrivateMessageEvent;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.jetbrains.annotations.NotNull;
@@ -17,7 +17,7 @@ public class RyuZUPluginChatListener implements Listener {
     }
 
     @EventHandler
-    public void handlePrivate(AsyncPrivateMessageEvent e) {
+    public void handlePrivate(AsyncPublishPrivateMessageEvent e) {
         ChatMessage cm = new ChatMessage(
                 ChatMessage.Type.PRIVATE,
                 e.getMessage().getSentPlayerUuid(),
@@ -31,7 +31,7 @@ public class RyuZUPluginChatListener implements Listener {
     }
 
     @EventHandler
-    public void handleChannel(AsyncChannelMessageEvent e) {
+    public void handleChannel(AsyncPublishChannelMessageEvent e) {
         ChatMessage cm = new ChatMessage(
                 ChatMessage.Type.CHANNEL,
                 e.getMessage().getPlayerUuid(),
@@ -45,7 +45,7 @@ public class RyuZUPluginChatListener implements Listener {
     }
 
     @EventHandler
-    public void handleGlobal(AsyncGlobalMessageEvent e) {
+    public void handleGlobal(AsyncPublishGlobalMessageEvent e) {
         ChatMessage cm = new ChatMessage(
                 ChatMessage.Type.GLOBAL,
                 e.getMessage().getPlayerUuid(),
