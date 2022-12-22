@@ -90,7 +90,7 @@ public class ReportCommand extends AbstractCommand {
 
     private static @Nullable String findReasonKey(@NotNull String reason) {
         return REASON_KEYS.stream()
-                .filter(key -> getFromAllLocales("command.report.reason." + key).stream().anyMatch(r -> r.equals(reason)))
+                .filter(key -> Objects.equals(key, reason) || getFromAllLocales("command.report.reason." + key).stream().anyMatch(r -> r.equals(reason)))
                 .findFirst()
                 .orElse(null);
     }
@@ -280,6 +280,10 @@ public class ReportCommand extends AbstractCommand {
         if (reports.stream().anyMatch(r -> r.createdAt() + 1000 * 60 * 5 > System.currentTimeMillis())) {
             // this player has been reported in the last 5 minutes (for any reason)
             source.sendMessage(Messages.getFormattedComponent(source, "command.report.reported_recently").color(NamedTextColor.RED));
+            return true;
+        }
+        if (reports.stream().anyMatch(r -> reason.equals(r.reason()))) {
+            source.sendMessage(Messages.getFormattedComponent(source, "command.report.already_reported").color(NamedTextColor.RED));
             return true;
         }
         String reasonKey = findReasonKey(reason);
