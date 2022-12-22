@@ -105,11 +105,11 @@ public class ReportCommand extends AbstractCommand {
             if (data == null) return;
             List<ReportData> reports = DataProvider.getActiveReportsFor(plugin.getDatabaseManager(), data.uuid());
             Messages.sendFormatted(source, "command.report.no_reason.header", data.name());
-            boolean alreadyReportedChat = CHAT_REASON_KEYS.stream().anyMatch(key -> reports.stream().anyMatch(r -> key.equals(findReasonKey(r.reason()))));
+            boolean alreadyReportedChat = CHAT_REASON_KEYS.stream().anyMatch(key -> reports.stream().anyMatch(r -> key.equals(r.reason()) || key.equals(findReasonKey(r.reason()))));
             for (String key : REASON_KEYS) {
                 String reason = Messages.getRawMessage(source, "command.report.reason." + key);
                 Component component = Messages.getFormattedComponent(source, "command.report.no_reason.entry.circle", reason);
-                if (reports.stream().anyMatch(r -> key.equals(findReasonKey(r.reason()))) || (alreadyReportedChat && CHAT_REASON_KEYS.contains(key))) {
+                if (reports.stream().anyMatch(r -> key.equals(r.reason()) || key.equals(findReasonKey(r.reason()))) || (alreadyReportedChat && CHAT_REASON_KEYS.contains(key))) {
                     // active report exists
                     component = component.color(NamedTextColor.DARK_GRAY);
                     component = component.hoverEvent(HoverEvent.showText(Messages.getFormattedComponent(source, "command.report.already_reported")));
