@@ -46,10 +46,10 @@ public class CheckClosedReportTask implements Runnable {
             if (report.flags().contains(ReportData.RESOLVED)) {
                 containsValidFlags = true;
                 Messages.sendFormatted(p, "report.resolved");
-            } else if (report.flags().contains(ReportData.NEED_MORE_PROOFS)) {
+            } else if (report.flags().contains(ReportData.NEED_MORE_PROOF)) {
                 containsValidFlags = true;
                 PlayerData data = DataProvider.getPlayerDataById(plugin.getDatabaseManager(), report.reportedId()).orElseThrow(IllegalArgumentException::new);
-                Messages.sendFormatted(p, "report.need_more_proofs", data.name());
+                Messages.sendFormatted(p, "report.need_more_proof", data.name());
             } else if (report.flags().contains(ReportData.INVALID)) {
                 containsValidFlags = true;
                 PlayerData data = DataProvider.getPlayerDataById(plugin.getDatabaseManager(), report.reportedId()).orElseThrow(IllegalArgumentException::new);
