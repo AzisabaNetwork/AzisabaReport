@@ -59,7 +59,7 @@ import java.util.stream.Stream;
 // /report
 public class ReportCommand extends AbstractCommand {
     private static final List<String> CHAT_REASON_KEYS = Arrays.asList("spam", "inappropriate-chat", "inappropriate-player-name");
-    private static final List<String> IN_GAME_REASON_KEYS = Arrays.asList("cheating", "teaming");
+    private static final List<String> IN_GAME_REASON_KEYS = Arrays.asList("cheating", "teaming", "griefing");
     private static final List<String> REASON_KEYS = concatList(CHAT_REASON_KEYS, IN_GAME_REASON_KEYS);
 
     private final AzisabaReport plugin;
