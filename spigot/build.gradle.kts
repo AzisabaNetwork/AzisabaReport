@@ -8,7 +8,7 @@ repositories {
 dependencies {
     api(project(":common"))
     compileOnly("org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT")
-    compileOnly("com.github.AzisabaNetwork:RyuZUPluginChat:v4.1.0")
+    compileOnly("com.github.AzisabaNetwork:RyuZUPluginChat:v4.2.0")
     compileOnly("com.github.AzisabaNetwork:LunaChatPlus:v3.2.0") {
         exclude("org.bstats", "bstats-bukkit")
         exclude("org.bstats", "bstats-bungeecord")
