@@ -9,7 +9,7 @@ dependencies {
     api(project(":common"))
     compileOnly("org.spigotmc:spigot-api:1.12.2-R0.1-SNAPSHOT")
     compileOnly("net.azisaba:RyuZUPluginChat:4.2.0")
-    compileOnly("com.github.AzisabaNetwork:LunaChatPlus:v3.2.0") {
+    compileOnly("net.azisaba:lunachatplus:3.2.2") {
         exclude("org.bstats", "bstats-bukkit")
         exclude("org.bstats", "bstats-bungeecord")
     }
