@@ -2,7 +2,7 @@ package net.azisaba.azisabareport.velocity.tasks;
 
 import com.velocitypowered.api.proxy.Player;
 import net.azisaba.azisabareport.velocity.AzisabaReport;
-import net.azisaba.azisabareport.velocity.data.PlayerData;
+import net.azisaba.azisabareport.common.data.PlayerData;
 import net.azisaba.azisabareport.velocity.data.ReportData;
 import net.azisaba.azisabareport.velocity.message.Messages;
 import net.azisaba.azisabareport.velocity.sql.DataProvider;

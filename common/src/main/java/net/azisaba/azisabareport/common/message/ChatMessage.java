@@ -1,11 +1,13 @@
 package net.azisaba.azisabareport.common.message;
 
+import net.azisaba.azisabareport.common.data.PlayerData;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import xyz.acrylicstyle.util.serialization.codec.Codec;
 
 import java.util.Date;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
@@ -140,6 +142,16 @@ public class ChatMessage {
             sb.append("<").append(displayName.replace('&', '§')).append("> ").append(message);
         }
         return sb.toString();
+    }
+
+    public boolean isGlobal() {
+        return channelName == null;
+    }
+
+    public boolean relatesTo(@NotNull PlayerData data) {
+        return uuid.equals(data.uuid()) ||
+                (channelName != null && channelName.toLowerCase(Locale.ROOT).contains(data.name().toLowerCase(Locale.ROOT))) ||
+                message.toLowerCase(Locale.ROOT).contains(data.name().toLowerCase(Locale.ROOT));
     }
 
     public enum Type {

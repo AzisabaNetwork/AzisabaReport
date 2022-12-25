@@ -2,8 +2,9 @@ package net.azisaba.azisabareport.velocity.sql;
 
 import net.azisaba.azisabareport.common.message.ChatMessage;
 import net.azisaba.azisabareport.common.util.BitField;
-import net.azisaba.azisabareport.velocity.data.PlayerData;
+import net.azisaba.azisabareport.common.data.PlayerData;
 import net.azisaba.azisabareport.velocity.data.ReportData;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.PreparedStatement;
@@ -101,26 +102,101 @@ public class DataProvider {
 
     public static @NotNull List<ChatMessage> getRecentMessagesBy(@NotNull DatabaseManager db, @NotNull UUID uuid) {
         try {
-            return db.query("SELECT * FROM `messages` WHERE `uuid` = ? AND `timestamp` > ? ORDER BY `timestamp` DESC LIMIT 100", ps -> {
+            return db.query("SELECT * FROM `messages` WHERE `uuid` = ? AND `timestamp` > ? ORDER BY `timestamp` DESC LIMIT 200", ps -> {
                 ps.setString(1, uuid.toString());
                 // 30 minutes
                 ps.setLong(2, System.currentTimeMillis() - 1000 * 60 * 30);
                 try (ResultSet rs = ps.executeQuery()) {
-                    List<ChatMessage> list = new ArrayList<>();
-                    while (rs.next()) {
-                        ChatMessage.Type type = ChatMessage.Type.values()[rs.getByte("type")];
-                        UUID id = UUID.fromString(rs.getString("uuid"));
-                        String username = rs.getString("username");
-                        String displayName = rs.getString("display_name");
-                        String channelName = rs.getString("channel_name");
-                        String message = rs.getString("message");
-                        long timestamp = rs.getLong("timestamp");
-                        String server = rs.getString("server");
-                        list.add(new ChatMessage(type, id, username, displayName, channelName, message, timestamp, server));
-                    }
-                    return list;
+                    return toChatMessages(rs);
                 }
             });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NotNull List<ChatMessage> getRecentMessagesRelatesTo(@NotNull DatabaseManager db, @NotNull UUID uuid) {
+        try {
+            PlayerData player = getPlayerDataById(db, uuid).orElseThrow();
+            return db.query("SELECT * FROM `messages` WHERE (`uuid` = ? OR LOWER(`channel_name`) LIKE ? OR LOWER(`message`) LIKE ?) AND `timestamp` > ? ORDER BY `timestamp` DESC LIMIT 200", ps -> {
+                ps.setString(1, uuid.toString());
+                ps.setString(2, "%" + player.name().toLowerCase() + "%");
+                ps.setString(3, "%" + player.name().toLowerCase() + "%");
+                // 30 minutes
+                ps.setLong(2, System.currentTimeMillis() - 1000 * 60 * 30);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return toChatMessages(rs);
+                }
+            });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NotNull List<ChatMessage> getRecentMessagesIn(@NotNull DatabaseManager db, @NotNull String server) {
+        try {
+            return db.query("SELECT * FROM `messages` WHERE `server` = ? AND `timestamp` > ? ORDER BY `timestamp` DESC LIMIT 200", ps -> {
+                ps.setString(1, server);
+                // 15 minutes
+                ps.setLong(2, System.currentTimeMillis() - 1000 * 60 * 30);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return toChatMessages(rs);
+                }
+            });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NotNull List<ChatMessage> getRecentMessagesGlobal(@NotNull DatabaseManager db) {
+        try {
+            // ordinal of ChatMessage.Type#GLOBAL is 0
+            return db.query("SELECT * FROM `messages` WHERE `type` = 0 AND `timestamp` > ? ORDER BY `timestamp` DESC LIMIT 200", ps -> {
+                // 15 minutes
+                ps.setLong(1, System.currentTimeMillis() - 1000 * 60 * 30);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return toChatMessages(rs);
+                }
+            });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NotNull List<ChatMessage> getRecentMessagesAll(@NotNull DatabaseManager db) {
+        try {
+            return db.query("SELECT * FROM `messages` WHERE `timestamp` > ? ORDER BY `timestamp` DESC LIMIT 200", ps -> {
+                // 15 minutes
+                ps.setLong(1, System.currentTimeMillis() - 1000 * 60 * 30);
+                try (ResultSet rs = ps.executeQuery()) {
+                    return toChatMessages(rs);
+                }
+            });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static @NotNull List<ChatMessage> toChatMessages(@NotNull ResultSet rs) throws SQLException {
+        List<ChatMessage> list = new ArrayList<>();
+        while (rs.next()) {
+            list.add(toChatMessage(rs));
+        }
+        return list;
+    }
+
+    @Contract("_ -> new")
+    private static @NotNull ChatMessage toChatMessage(@NotNull ResultSet rs) {
+        try {
+            ChatMessage.Type type = ChatMessage.Type.values()[rs.getByte("type")];
+            UUID id = UUID.fromString(rs.getString("uuid"));
+            String username = rs.getString("username");
+            String displayName = rs.getString("display_name");
+            String channelName = rs.getString("channel_name");
+            String message = rs.getString("message");
+            long timestamp = rs.getLong("timestamp");
+            String server = rs.getString("server");
+            return new ChatMessage(type, id, username, displayName, channelName, message, timestamp, server);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

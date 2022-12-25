@@ -14,7 +14,7 @@ import net.azisaba.azisabareport.common.data.PlayerPosData;
 import net.azisaba.azisabareport.common.message.ChatMessage;
 import net.azisaba.azisabareport.velocity.AzisabaReport;
 import net.azisaba.azisabareport.velocity.data.FileData;
-import net.azisaba.azisabareport.velocity.data.PlayerData;
+import net.azisaba.azisabareport.common.data.PlayerData;
 import net.azisaba.azisabareport.velocity.data.ReportData;
 import net.azisaba.azisabareport.velocity.message.Messages;
 import net.azisaba.azisabareport.velocity.redis.RedisKeys;
@@ -53,6 +53,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -150,34 +151,44 @@ public class ReportCommand extends AbstractCommand {
         return 0;
     }
 
-    private void handleChatReport(@NotNull PlayerData player, @NotNull JsonObject payload) {
+    private void handleChatReport(@NotNull PlayerData target, @NotNull JsonObject payload) {
         List<ChatMessage> messages =
-                DataProvider.getRecentMessagesBy(plugin.getDatabaseManager(), player.uuid())
+                DataProvider.getRecentMessagesAll(plugin.getDatabaseManager())
                         .stream()
                         .sorted((a, b) -> (int) (b.getTimestamp() - a.getTimestamp()))
                         .toList();
-        // add files if necessary
-        FileData textFile;
-        FileData jsonFile;
-        if (messages.isEmpty()) {
-            textFile = null;
-            jsonFile = null;
-        } else {
-            String text = messages.stream().map(ChatMessage::toString).collect(Collectors.joining("\n"));
-            JsonArray array = new JsonArray(messages.size());
-            for (ChatMessage message : messages) {
-                array.add(toJson(message));
+        List<FileData> files = new ArrayList<>();
+
+        // Function<messages, suffix>
+        BiConsumer<List<ChatMessage>, String> fn = (list, suffix) -> {
+            if (!list.isEmpty()) {
+                String text = list.stream().map(ChatMessage::toString).collect(Collectors.joining("\n"));
+                JsonArray array = new JsonArray(list.size());
+                for (ChatMessage message : list) {
+                    array.add(toJson(message));
+                }
+                files.add(new FileData("chat" + suffix + ".txt", ContentType.TEXT_PLAIN.withCharset(StandardCharsets.UTF_8), text.getBytes(StandardCharsets.UTF_8)));
+                files.add(new FileData("chat" + suffix + ".json", ContentType.APPLICATION_JSON, array.toString().getBytes(StandardCharsets.UTF_8)));
             }
-            textFile = new FileData("chat.txt", ContentType.TEXT_PLAIN.withCharset(StandardCharsets.UTF_8), text.getBytes(StandardCharsets.UTF_8));
-            jsonFile = new FileData("chat.json", ContentType.APPLICATION_JSON, array.toString().getBytes(StandardCharsets.UTF_8));
+        };
+
+        // get player pos (server)
+        PlayerPosData pos;
+        try (Jedis jedis = plugin.getJedisBox().getJedisPool().getResource()) {
+            pos = getPlayerPos(jedis, target.uuid());
+        }
+
+        // add files
+        fn.accept(messages, "_all");
+        fn.accept(messages.stream().filter(ChatMessage::isGlobal).toList(), "_global");
+        fn.accept(messages.stream().filter(m -> m.relatesTo(target)).toList(), "_related");
+        fn.accept(messages.stream().filter(m -> m.getUniqueId().equals(target.uuid())).toList(), "_self");
+        if (pos != null) {
+            fn.accept(messages.stream().filter(m -> Objects.equals(pos.server(), m.getServer())).toList(), "_server");
         }
 
         // execute webhook
-        if (textFile != null) {
-            executeWebhook(plugin.getConfig().reportURL.toString(), payload, textFile, jsonFile);
-        } else {
-            executeWebhook(plugin.getConfig().reportURL.toString(), payload);
-        }
+        executeWebhook(plugin.getConfig().reportURL.toString(), payload, files.toArray(new FileData[0]));
     }
 
     private int execute(@NotNull CommandSource source, @NotNull String player, @NotNull String reason) {
