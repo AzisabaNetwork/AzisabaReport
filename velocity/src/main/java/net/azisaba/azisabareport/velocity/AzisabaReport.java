@@ -11,7 +11,6 @@ import com.velocitypowered.api.plugin.Plugin;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ProxyServer;
 import net.azisaba.azisabareport.velocity.commands.AzisabaReportCoreCommand;
-import net.azisaba.azisabareport.velocity.commands.ReportBugCommand;
 import net.azisaba.azisabareport.velocity.listener.PlayerListener;
 import net.azisaba.azisabareport.velocity.listener.PluginMessageListener;
 import net.azisaba.azisabareport.velocity.message.Messages;
@@ -56,7 +55,6 @@ public class AzisabaReport {
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) {
         server.getCommandManager().register(new ReportCommand(this).createCommand());
-        server.getCommandManager().register("reportbug", new ReportBugCommand(this));
         server.getCommandManager().register(new AzisabaReportCoreCommand().createCommand());
         server.getEventManager().register(this, new PlayerListener(this));
         server.getEventManager().register(this, new PluginMessageListener(this));
