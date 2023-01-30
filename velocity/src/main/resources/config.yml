@@ -4,7 +4,11 @@
 #  | GitHub : https://github.com/AzisabaNetwork/AzisabaReport |
 #  +----------------------------------------------------------+
 
-report-url: http://0.0.0.0
+report-url:
+  __default__:
+    - http://0.0.0.0
+  server-name:
+    - http://0.0.0.0
 report-bug-url: http://0.0.0.0
 report-mention: ""
 report-bug-mention: ""

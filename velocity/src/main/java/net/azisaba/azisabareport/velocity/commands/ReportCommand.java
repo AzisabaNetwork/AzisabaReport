@@ -151,7 +151,7 @@ public class ReportCommand extends AbstractCommand {
         return 0;
     }
 
-    private void handleChatReport(@NotNull PlayerData target, @NotNull JsonObject payload) {
+    private void handleChatReport(@NotNull String serverName, @NotNull PlayerData target, @NotNull JsonObject payload) {
         List<ChatMessage> messages =
                 DataProvider.getRecentMessagesAll(plugin.getDatabaseManager())
                         .stream()
@@ -188,7 +188,7 @@ public class ReportCommand extends AbstractCommand {
         }
 
         // execute webhook
-        executeWebhook(plugin.getConfig().reportURL.toString(), payload, files.toArray(new FileData[0]));
+        executeWebhookBulk(plugin.getConfig().getReportURLs(serverName), payload, files.toArray(new FileData[0]));
     }
 
     private int execute(@NotNull CommandSource source, @NotNull String player, @NotNull String reason) {
@@ -297,12 +297,12 @@ public class ReportCommand extends AbstractCommand {
                 // chat reports
 
                 // handle in separate method
-                handleChatReport(data, o);
+                handleChatReport(senderServerName, data, o);
             } else {
                 // other reports
 
                 // execute webhook
-                executeWebhook(plugin.getConfig().reportURL.toString(), o);
+                executeWebhookBulk(plugin.getConfig().getReportURLs(senderServerName), o);
             }
 
             // send feedback
@@ -353,6 +353,12 @@ public class ReportCommand extends AbstractCommand {
             return null;
         }
         return data;
+    }
+
+    public static void executeWebhookBulk(@NotNull List<?> uriList, @NotNull JsonObject json, @NotNull FileData @NotNull ... files) {
+        for (Object uri : uriList) {
+            executeWebhook(uri.toString(), json, files);
+        }
     }
 
     public static void executeWebhook(@NotNull String uri, @NotNull JsonObject json, @NotNull FileData @NotNull ... files) {
