@@ -22,8 +22,8 @@ redis:
 database:
   # (scheme)://(host):(port)/(database)
   # Keep the line commented out unless you get an obvious error message indicating that the driver was not found.
-  # Default driver (net.azisaba.azisabaachievements.libs.org.mariadb.jdbc.Driver) points to the bundled MariaDB driver in the AzisabaAchievements jar.
-  #driver: net.azisaba.azisabaachievements.libs.org.mariadb.jdbc.Driver
+  # Default driver (net.azisaba.azisabareport.libs.org.mariadb.jdbc.Driver) points to the bundled MariaDB driver in the AzisabaReport jar.
+  #driver: net.azisaba.azisabareport.libs.org.mariadb.jdbc.Driver
 
   # change to jdbc:mysql if you want to use MySQL instead of MariaDB
   scheme: jdbc:mariadb
