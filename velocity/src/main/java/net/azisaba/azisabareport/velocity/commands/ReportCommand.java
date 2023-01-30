@@ -293,7 +293,11 @@ public class ReportCommand extends AbstractCommand {
             o.add("embeds", embeds);
 
             // handle report
-            if (getReasonsInAllLocales(CHAT_REASON_KEYS.stream()).contains(reason) || CHAT_REASON_KEYS.contains(reason.toLowerCase(Locale.ROOT))) {
+            if (getReasonsInAllLocales(CHAT_REASON_KEYS.stream()).contains(reason) ||
+                    CHAT_REASON_KEYS.contains(reason.toLowerCase(Locale.ROOT)) ||
+                    reason.contains("不適切な発言") ||
+                    reason.contains("不適切発言") ||
+                    reason.contains("スパム")) {
                 // chat reports
 
                 // handle in separate method
