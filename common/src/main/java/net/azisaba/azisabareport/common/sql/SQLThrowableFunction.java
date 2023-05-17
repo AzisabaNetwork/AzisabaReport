@@ -1,4 +1,4 @@
-package net.azisaba.azisabareport.velocity.sql;
+package net.azisaba.azisabareport.common.sql;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;

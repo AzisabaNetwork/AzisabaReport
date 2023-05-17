@@ -1,4 +1,4 @@
-package net.azisaba.azisabareport.velocity.sql;
+package net.azisaba.azisabareport.spigot.sql;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -9,7 +9,6 @@ import org.intellij.lang.annotations.Language;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.mariadb.jdbc.Driver;
-import org.slf4j.Logger;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -19,6 +18,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public final class DatabaseManager {
     private static final AtomicInteger ID = new AtomicInteger(0);
@@ -43,7 +44,6 @@ public final class DatabaseManager {
     public DatabaseManager(@NotNull Logger logger, @NotNull HikariDataSource dataSource) throws SQLException {
         this.logger = logger;
         this.dataSource = dataSource;
-        createTables();
     }
 
     public @NotNull Future<?> queue(@NotNull @Language("SQL") String query, @NotNull SQLThrowableConsumer<PreparedStatement> action) {
@@ -53,50 +53,8 @@ public final class DatabaseManager {
                     action.accept(statement);
                 }
             } catch (SQLException e) {
-                logger.error("Error executing query", e);
+                logger.log(Level.SEVERE, "Error executing query", e);
             }
-        });
-    }
-
-    @SuppressWarnings("SqlNoDataSourceInspection")
-    private void createTables() throws SQLException {
-        useStatement(statement -> {
-            // uuid
-            // username
-            statement.executeUpdate("""
-                    CREATE TABLE IF NOT EXISTS `players` (
-                        `id` VARCHAR(36) NOT NULL,
-                        `name` VARCHAR(32) NOT NULL,
-                        `name_last_updated` TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW(),
-                        PRIMARY KEY (`id`)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-                    """);
-            statement.executeUpdate("""
-                    CREATE TABLE IF NOT EXISTS `reports` (
-                        `id` BIGINT NOT NULL AUTO_INCREMENT,
-                        `reporter_id` VARCHAR(36) NOT NULL,
-                        `reported_id` VARCHAR(36) NOT NULL,
-                        `reason` VARCHAR(255) NOT NULL,
-                        `flags` INT NOT NULL DEFAULT 1,
-                        `public_comment` TEXT DEFAULT NULL,
-                        `comment` TEXT DEFAULT NULL,
-                        `created_at` TIMESTAMP NOT NULL DEFAULT NOW(),
-                        `updated_at` TIMESTAMP NOT NULL DEFAULT NOW() ON UPDATE NOW(),
-                        PRIMARY KEY (`id`)
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-                    """);
-            statement.executeUpdate("""
-                    CREATE TABLE IF NOT EXISTS `messages` (
-                        `type` TINYINT(1) NOT NULL,
-                        `uuid` VARCHAR(36) NOT NULL,
-                        `username` VARCHAR(32) NOT NULL,
-                        `display_name` TEXT,
-                        `channel_name` TEXT,
-                        `message` TEXT NOT NULL,
-                        `timestamp` BIGINT NOT NULL,
-                        `server` TEXT NOT NULL
-                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci
-                    """);
         });
     }
 

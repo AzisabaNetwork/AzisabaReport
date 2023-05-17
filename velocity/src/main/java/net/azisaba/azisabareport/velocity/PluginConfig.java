@@ -1,7 +1,7 @@
 package net.azisaba.azisabareport.velocity;
 
 import com.google.common.reflect.TypeToken;
-import net.azisaba.azisabareport.velocity.sql.DatabaseConfig;
+import net.azisaba.azisabareport.common.sql.DatabaseConfig;
 import ninja.leaping.configurate.ConfigurationNode;
 import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 import ninja.leaping.configurate.yaml.YAMLConfigurationLoader;

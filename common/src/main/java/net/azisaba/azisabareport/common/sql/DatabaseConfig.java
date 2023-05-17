@@ -1,11 +1,8 @@
-package net.azisaba.azisabareport.velocity.sql;
+package net.azisaba.azisabareport.common.sql;
 
-import com.zaxxer.hikari.HikariConfig;
-import com.zaxxer.hikari.HikariDataSource;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.mariadb.jdbc.Driver;
 
 import java.util.Properties;
 
@@ -90,19 +87,5 @@ public final class DatabaseConfig {
     @NotNull
     public String toUrl() {
         return scheme() + "://" + hostname() + ":" + port() + "/" + name();
-    }
-
-    @Contract(" -> new")
-    public @NotNull HikariDataSource createDataSource() {
-        new Driver();
-        HikariConfig config = new HikariConfig();
-        if (driver() != null) {
-            config.setDriverClassName(driver());
-        }
-        config.setJdbcUrl(toUrl());
-        config.setUsername(username());
-        config.setPassword(password());
-        config.setDataSourceProperties(properties());
-        return new HikariDataSource(config);
     }
 }

@@ -1,3 +1,6 @@
 name: AzisabaReport
 main: net.azisaba.azisabareport.spigot.AzisabaReport
 version: @version@
+commands:
+  reports:
+    permission: azisabareport.reports

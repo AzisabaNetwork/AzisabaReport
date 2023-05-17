@@ -1,24 +1,3 @@
-#  +----------------------------------------------------------+
-#  |                    AzisabaReport plugin                  |
-#  |                                                          |
-#  | GitHub : https://github.com/AzisabaNetwork/AzisabaReport |
-#  +----------------------------------------------------------+
-
-report-url:
-  __default__:
-    - http://0.0.0.0
-  server-name:
-    - http://0.0.0.0
-report-bug-url: http://0.0.0.0
-report-mention: ""
-report-bug-mention: ""
-
-redis:
-  host: localhost
-  port: 6379
-  username: null
-  password: null
-
 database:
   # (scheme)://(host):(port)/(database)
   # Keep the line commented out unless you get an obvious error message indicating that the driver was not found.
@@ -30,8 +9,8 @@ database:
   hostname: localhost
   port: 3306
   name: azisabareport
-  username: azisabareport
-  password: azisabareport
+  username: azisabareport_readonly
+  password: azisabareport_readonly
   properties:
     useSSL: false
     verifyServerCertificate: true

@@ -43,7 +43,7 @@ public class AzisabaReport {
         this.logger = logger;
         this.dataDirectory = dataDirectory;
         this.config = new PluginConfig(this);
-        this.databaseManager = new DatabaseManager(this.logger, config.databaseConfig.createDataSource());
+        this.databaseManager = new DatabaseManager(this.logger, DatabaseManager.createDataSource(config.databaseConfig));
         this.jedisBox = new JedisBox(config.redisHost, config.redisPort, config.redisUsername, config.redisPassword);
         try (Jedis jedis = jedisBox.getJedisPool().getResource()) {
             jedis.set("azisaba_report:test", "true", SetParams.setParams().ex(1));
