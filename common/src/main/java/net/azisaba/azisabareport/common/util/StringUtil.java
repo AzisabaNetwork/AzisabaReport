@@ -13,13 +13,14 @@ public class StringUtil {
         List<String> result = new ArrayList<>();
         int i = 0;
         while (i < s.length()) {
-            int min = Math.min(i + maxLength, s.length());
-            int j = min;
-            while (j > i && !Character.isWhitespace(s.charAt(j - 1))) {
-                j--;
+            int j = Math.min(i + maxLength, s.length());
+            if (j == s.length()) {
+                result.add(s.substring(i, j));
+                break;
             }
-            if (i == j) { // special case when no split point found
-                j = min; // take whole substring
+            int k = s.lastIndexOf(" ", j - 1);
+            if (k >= i) {
+                j = k + 1;
             }
             result.add(s.substring(i, j));
             i = j;
