@@ -12,6 +12,7 @@ report-url:
 report-bug-url: http://0.0.0.0
 report-mention: ""
 report-bug-mention: ""
+uploader-url: "" # {id} can be used here
 
 redis:
   host: localhost

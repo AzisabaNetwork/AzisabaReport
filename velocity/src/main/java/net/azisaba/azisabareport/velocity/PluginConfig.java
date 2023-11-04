@@ -26,6 +26,7 @@ public class PluginConfig {
     public final URL reportBugURL;
     public final String reportMention;
     public final String reportBugMention;
+    public final String uploaderUrl;
     public final String redisHost;
     public final int redisPort;
     public final String redisUsername;
@@ -68,6 +69,7 @@ public class PluginConfig {
         reportBugURL = new URL(Objects.requireNonNull(config.getNode("reportBugURL").getString(), "reportBugURL is not set"));
         reportMention = config.getNode("reportMention").getString("");
         reportBugMention = config.getNode("reportBugMention").getString("");
+        uploaderUrl = config.getNode("uploader-url").getString("");
         this.redisHost = config.getNode("redis", "host").getString("localhost");
         this.redisPort = config.getNode("redis", "port").getInt(6379);
         this.redisUsername = config.getNode("redis", "username").getString();
