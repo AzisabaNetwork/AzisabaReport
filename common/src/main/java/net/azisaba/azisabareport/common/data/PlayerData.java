@@ -2,11 +2,21 @@ package net.azisaba.azisabareport.common.data;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import xyz.acrylicstyle.util.serialization.codec.Codec;
 
 import java.util.Objects;
 import java.util.UUID;
 
 public final class PlayerData {
+    public static Codec<PlayerData> CODEC =
+            Codec.<PlayerData>builder()
+                    .group(
+                            Codec.UUID.fieldOf("id").getter(PlayerData::uuid),
+                            Codec.STRING.fieldOf("name").getter(PlayerData::name)
+                    )
+                    .build(PlayerData::new)
+                    .named("PlayerData");
+
     private final UUID uuid;
     private final String name;
 

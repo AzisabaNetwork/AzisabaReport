@@ -6,6 +6,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import xyz.acrylicstyle.util.serialization.codec.Codec;
 
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Objects;
@@ -141,6 +142,21 @@ public class ChatMessage {
             sb.append("<<").append(username).append(">> ");
             sb.append("<").append(displayName.replace('&', '§')).append("> ").append(message);
         }
+        return sb.toString();
+    }
+
+    public String toRichString() {
+        StringBuilder sb = new StringBuilder();
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        sb.append("§7[").append(dateFormat.format(timestamp)).append("] ");
+        sb.append("§d[@").append(server).append("] ");
+        sb.append("§b[").append(type.name().charAt(0)).append(type.name().substring(1).toLowerCase()).append("] ");
+        if (channelName != null) sb.append("§5[").append(channelName).append("] ");
+        sb.append("§6<<").append(username).append(">>");
+        if (displayName != null) {
+            sb.append("§f<").append(displayName.replace('&', '§')).append("§r§f> ");
+        }
+        sb.append(message);
         return sb.toString();
     }
 

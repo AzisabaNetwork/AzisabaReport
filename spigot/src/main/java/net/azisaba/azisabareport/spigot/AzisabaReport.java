@@ -2,6 +2,7 @@ package net.azisaba.azisabareport.spigot;
 
 import net.azisaba.azisabareport.common.sql.DatabaseConfig;
 import net.azisaba.azisabareport.common.util.ClassUtil;
+import net.azisaba.azisabareport.spigot.commands.LookupMessagesCommand;
 import net.azisaba.azisabareport.spigot.commands.ReportsCommand;
 import net.azisaba.azisabareport.spigot.event.SetChatListenerEvent;
 import net.azisaba.azisabareport.spigot.gui.ReportsScreen;
@@ -41,6 +42,7 @@ public class AzisabaReport extends JavaPlugin {
         }
         Bukkit.getPluginManager().registerEvents(new ReportsScreen.EventListener(), this);
         Objects.requireNonNull(Bukkit.getPluginCommand("reports")).setExecutor(new ReportsCommand(this));
+        Objects.requireNonNull(Bukkit.getPluginCommand("lookupmessages")).setExecutor(new LookupMessagesCommand(this, databaseManager));
         try {
             Bukkit.getMessenger().registerOutgoingPluginChannel(this, CHANNEL_CHAT);
             Bukkit.getMessenger().registerOutgoingPluginChannel(this, CHANNEL_PLAYER_POS);

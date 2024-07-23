@@ -4,3 +4,5 @@ version: @version@
 commands:
   reports:
     permission: azisabareport.reports
+  lookupmessages:
+    permission: azisabareport.lookupmessages

@@ -1,6 +1,7 @@
 package net.azisaba.azisabareport.spigot.sql;
 
 import net.azisaba.azisabareport.common.data.PlayerData;
+import net.azisaba.azisabareport.common.message.ChatMessage;
 import net.azisaba.azisabareport.common.util.BitField;
 import net.azisaba.azisabareport.spigot.data.ReportData;
 import org.jetbrains.annotations.NotNull;
@@ -9,7 +10,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -85,6 +85,34 @@ public class DataProvider {
                     List<PlayerData> players = new ArrayList<>();
                     while (rs.next()) {
                         players.add(new PlayerData(UUID.fromString(rs.getString("id")), rs.getString("name")));
+                    }
+                    return players;
+                }
+            });
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static @NotNull List<ChatMessage> getMessages(@NotNull DatabaseManager db, @NotNull List<UUID> list) {
+        try {
+            return db.query("SELECT * FROM `messages` WHERE `uuid` IN (" + list.stream().map(s -> "?").collect(Collectors.joining(", ")) + ") ORDER BY `timestamp` DESC LIMIT 1000", ps -> {
+                for (int i = 0; i < list.size(); i++) {
+                    ps.setString(i + 1, list.get(i).toString());
+                }
+                try (ResultSet rs = ps.executeQuery()) {
+                    List<ChatMessage> players = new ArrayList<>();
+                    while (rs.next()) {
+                        players.add(new ChatMessage(
+                                ChatMessage.Type.values()[rs.getInt("type")],
+                                UUID.fromString(rs.getString("uuid")),
+                                rs.getString("username"),
+                                rs.getString("display_name"),
+                                rs.getString("channel_name"),
+                                rs.getString("message"),
+                                rs.getLong("timestamp"),
+                                rs.getString("server")
+                        ));
                     }
                     return players;
                 }
