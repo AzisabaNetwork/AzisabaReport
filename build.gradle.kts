@@ -1,3 +1,6 @@
+import java.net.URLClassLoader
+import java.util.ServiceLoader
+
 plugins {
     java
     `java-library`
@@ -80,6 +83,11 @@ allprojects {
         }
 
         shadowJar {
+            // Relocate service descriptors and provider names along with the driver classes.
+            filesMatching("META-INF/services/**") {
+                duplicatesStrategy = DuplicatesStrategy.INCLUDE
+            }
+            mergeServiceFiles()
             relocate("redis.clients", "net.azisaba.azisabareport.libs.redis.clients")
             relocate("io.netty", "net.azisaba.azisabareport.libs.io.netty")
             relocate("org.mariadb.jdbc", "net.azisaba.azisabareport.libs.org.mariadb.jdbc")
@@ -91,6 +99,30 @@ allprojects {
 }
 
 subprojects {
+    if (name == "velocity" || name == "spigot") {
+        val shadedJar = tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar")
+        val verifyShadedAuthentication by tasks.registering {
+            group = "verification"
+            description = "Verifies MariaDB authentication discovery inside the distribution JAR."
+            dependsOn(shadedJar)
+            inputs.file(shadedJar.flatMap { it.archiveFile })
+            doLast {
+                val jar = shadedJar.get().archiveFile.get().asFile
+                // Isolate the JAR so dependencies on Gradle's classpath cannot hide packaging errors.
+                URLClassLoader(arrayOf(jar.toURI().toURL()), ClassLoader.getPlatformClassLoader()).use { loader ->
+                    val factory = loader.loadClass(
+                        "net.azisaba.azisabareport.libs.org.mariadb.jdbc.plugin.AuthenticationPluginFactory"
+                    )
+                    val types = ServiceLoader.load(factory, loader)
+                        .map { factory.getMethod("type").invoke(it).toString() }
+                    check("mysql_native_password" in types) {
+                        "${jar.name}: mysql_native_password authentication provider is missing (found $types)"
+                    }
+                }
+            }
+        }
+        tasks.named("check") { dependsOn(verifyShadedAuthentication) }
+    }
     tasks {
         shadowJar {
             archiveBaseName.set("${parent!!.name}-${project.name}")
