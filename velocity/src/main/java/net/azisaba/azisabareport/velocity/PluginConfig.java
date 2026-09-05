@@ -1,10 +1,8 @@
 package net.azisaba.azisabareport.velocity;
 
-import com.google.common.reflect.TypeToken;
 import net.azisaba.azisabareport.common.sql.DatabaseConfig;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
-import ninja.leaping.configurate.yaml.YAMLConfigurationLoader;
+import org.spongepowered.configurate.ConfigurationNode;
+import org.spongepowered.configurate.yaml.YamlConfigurationLoader;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
@@ -42,15 +40,15 @@ public class PluginConfig {
                 }
             }
         }
-        ConfigurationNode config = YAMLConfigurationLoader.builder().setPath(configPath).build().load();
-        if (config.getNode("reportURL").isMap()) {
-            config.getNode("reportURL").getChildrenMap().forEach((key, value) -> {
+        ConfigurationNode config = YamlConfigurationLoader.builder().path(configPath).build().load();
+        if (config.node("reportURL").isMap()) {
+            config.node("reportURL").childrenMap().forEach((key, value) -> {
                 List<URL> urls = new ArrayList<>();
                 try {
-                    for (String s : value.getList(TypeToken.of(String.class))) {
+                    for (String s : value.getList(String.class, Collections.emptyList())) {
                         urls.add(new URL(s));
                     }
-                } catch (IOException | ObjectMappingException e) {
+                } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
                 reportURL.put(key.toString(), urls);
@@ -58,36 +56,36 @@ public class PluginConfig {
         } else {
             List<URL> urls = new ArrayList<>();
             try {
-                for (String s : config.getNode("reportURL").getList(TypeToken.of(String.class))) {
+                for (String s : config.node("reportURL").getList(String.class, Collections.emptyList())) {
                     urls.add(new URL(s));
                 }
-            } catch (IOException | ObjectMappingException e) {
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
             reportURL.put("__default__", urls);
         }
-        reportBugURL = new URL(Objects.requireNonNull(config.getNode("reportBugURL").getString(), "reportBugURL is not set"));
-        reportMention = config.getNode("reportMention").getString("");
-        reportBugMention = config.getNode("reportBugMention").getString("");
-        uploaderUrl = config.getNode("uploader-url").getString("");
-        this.redisHost = config.getNode("redis", "host").getString("localhost");
-        this.redisPort = config.getNode("redis", "port").getInt(6379);
-        this.redisUsername = config.getNode("redis", "username").getString();
-        this.redisPassword = config.getNode("redis", "password").getString();
-        databaseConfig = loadDatabaseConfig(config.getNode("database"));
+        reportBugURL = new URL(Objects.requireNonNull(config.node("reportBugURL").getString(), "reportBugURL is not set"));
+        reportMention = config.node("reportMention").getString("");
+        reportBugMention = config.node("reportBugMention").getString("");
+        uploaderUrl = config.node("uploader-url").getString("");
+        this.redisHost = config.node("redis", "host").getString("localhost");
+        this.redisPort = config.node("redis", "port").getInt(6379);
+        this.redisUsername = config.node("redis", "username").getString();
+        this.redisPassword = config.node("redis", "password").getString();
+        databaseConfig = loadDatabaseConfig(config.node("database"));
     }
 
     @Contract("_ -> new")
     private @NotNull DatabaseConfig loadDatabaseConfig(@NotNull ConfigurationNode node) {
-        String driver = node.getNode("driver").getString();
-        String scheme = node.getNode("scheme").getString("jdbc:mariadb");
-        String hostname = node.getNode("hostname").getString("localhost");
-        int port = node.getNode("port").getInt(3306);
-        String name = node.getNode("name").getString("azisabareport");
-        String username = node.getNode("username").getString();
-        String password = node.getNode("password").getString();
+        String driver = node.node("driver").getString();
+        String scheme = node.node("scheme").getString("jdbc:mariadb");
+        String hostname = node.node("hostname").getString("localhost");
+        int port = node.node("port").getInt(3306);
+        String name = node.node("name").getString("azisabareport");
+        String username = node.node("username").getString();
+        String password = node.node("password").getString();
         Properties properties = new Properties();
-        node.getNode("properties").getChildrenMap()
+        node.node("properties").childrenMap()
                 .forEach((key, value) -> properties.setProperty(String.valueOf(key), value.getString()));
         return new DatabaseConfig(driver, scheme, hostname, port, name, username, password, properties);
     }

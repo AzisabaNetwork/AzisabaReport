@@ -2,7 +2,7 @@ plugins {
     java
     `java-library`
     `maven-publish`
-    id("com.github.johnrengelman.shadow") version "8.1.1"
+    id("com.gradleup.shadow") version "9.2.2"
 }
 
 allprojects {
@@ -13,7 +13,7 @@ allprojects {
         plugin("java")
         plugin("java-library")
         plugin("maven-publish")
-        plugin("com.github.johnrengelman.shadow")
+        plugin("com.gradleup.shadow")
     }
 
     java {
@@ -24,7 +24,7 @@ allprojects {
 
     repositories {
         mavenCentral()
-        maven { url = uri("https://repo.acrylicstyle.xyz/repository/maven-public/") }
+        maven { url = uri("https://repo.azisaba.net/repository/maven-public/") }
     }
 
     val javaComponent = components["java"] as AdhocComponentWithVariants
@@ -34,20 +34,19 @@ allprojects {
 
     publishing {
         repositories {
-            maven {
+            val deployUrl = if (project.version.toString().endsWith("SNAPSHOT"))
+                project.findProperty("deploySnapshotURL") ?: System.getProperty("deploySnapshotURL", "")
+            else
+                project.findProperty("deployReleasesURL") ?: System.getProperty("deployReleasesURL", "")
+            if (deployUrl.toString().isNotBlank()) maven {
                 name = "repo"
                 credentials(PasswordCredentials::class)
-                url = uri(
-                    if (project.version.toString().endsWith("SNAPSHOT"))
-                        project.findProperty("deploySnapshotURL") ?: System.getProperty("deploySnapshotURL", "")
-                    else
-                        project.findProperty("deployReleasesURL") ?: System.getProperty("deployReleasesURL", "")
-                )
+                url = uri(deployUrl)
             }
         }
 
         publications {
-            create<MavenPublication>("mavenJava${project.name.capitalize()}") {
+            create<MavenPublication>("mavenJava${project.name.replaceFirstChar { it.uppercaseChar() }}") {
                 from(components["java"])
                 artifact(tasks.getByName("sourcesJar"))
             }

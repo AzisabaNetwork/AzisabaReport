@@ -312,7 +312,9 @@ public class ReportCommand extends AbstractCommand {
             // send feedback
             Messages.sendFormatted(source, "command.report.reported", data.name(), reason);
             if (!plugin.getConfig().uploaderUrl.isBlank()) {
-                Messages.sendFormatted(source, "command.report.uploader", plugin.getConfig().uploaderUrl.replace("{id}", Long.toString(reportId)));
+                String uploaderUrl = plugin.getConfig().uploaderUrl.replace("{id}", Long.toString(reportId));
+                Messages.sendFormatted(source, "command.report.uploader",
+                        Component.text(uploaderUrl).clickEvent(ClickEvent.openUrl(uploaderUrl)));
             }
         }).start();
         return 0;

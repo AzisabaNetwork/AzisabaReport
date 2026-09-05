@@ -3,7 +3,9 @@ package net.azisaba.azisabareport.velocity.message;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,13 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Messages {
     private static final Yaml YAML = new Yaml();
     private static final Map<String, MessageInstance> LOCALES = new ConcurrentHashMap<>();
-    private static final LegacyComponentSerializer LEGACY_COMPONENT_SERIALIZER =
-            LegacyComponentSerializer.builder()
-                    .character('&')
-                    .extractUrls()
-                    .hexColors()
-//                    .useUnusualXRepeatedCharacterHexFormat()
-                    .build();
+    private static final MiniMessage MINI_MESSAGE = MiniMessage.miniMessage();
     private static MessageInstance fallback;
 
     public static void load() throws IOException {
@@ -65,7 +61,16 @@ public class Messages {
 
     @NotNull
     public static Component format(@NotNull String s, Object... args) {
-        return LEGACY_COMPONENT_SERIALIZER.deserialize(s.formatted(args));
+        TagResolver.Builder placeholders = TagResolver.builder();
+        for (int i = 0; i < args.length; i++) {
+            String name = "arg" + i;
+            if (args[i] instanceof Component component) {
+                placeholders.resolver(Placeholder.component(name, component));
+            } else {
+                placeholders.resolver(Placeholder.unparsed(name, String.valueOf(args[i])));
+            }
+        }
+        return MINI_MESSAGE.deserialize(s, placeholders.build());
     }
 
     @NotNull
